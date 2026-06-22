@@ -64,10 +64,13 @@ def validate_init_data(init_data: str, bot_token: str) -> dict:
             f"{k}={v}" for k, v in sorted(data.items())
         )
 
-        # Step 4: Create secret key = HMAC-SHA256("WebAppData", bot_token)
+        # Step 4: Create secret key = HMAC-SHA256(key=bot_token, msg="WebAppData")
+        # Per Telegram spec: https://core.telegram.org/bots/webapps#validating-data-received-via-the-mini-app
+        # secret_key = HMAC_SHA256(key="WebAppData", data=bot_token)  ← Telegram's notation
+        # In Python hmac.new(): key=bot_token, msg="WebAppData"
         secret_key = hmac.new(
-            key=b"WebAppData",
-            msg=bot_token.encode("utf-8"),
+            key=bot_token.encode("utf-8"),
+            msg=b"WebAppData",
             digestmod=hashlib.sha256,
         ).digest()
 
