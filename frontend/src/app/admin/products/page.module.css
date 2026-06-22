@@ -1,0 +1,215 @@
+.headerRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.heading {
+  font-size: 1.3rem;
+  font-weight: 800;
+  margin: 0;
+  color: var(--app-text);
+}
+
+.inventoryList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.productItem {
+  padding: 12px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  transition: opacity 0.2s;
+}
+
+.productItem.inactive {
+  opacity: 0.5;
+}
+
+.productImage {
+  width: 48px;
+  height: 48px;
+  border-radius: var(--app-radius-sm);
+  background: var(--app-surface);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.productImage img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.productImage span {
+  font-size: 1.5rem;
+}
+
+.productDetails {
+  flex-grow: 1;
+  min-width: 0;
+}
+
+.productName {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.inactiveLabel {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--app-danger);
+}
+
+.productMeta {
+  display: flex;
+  gap: 16px;
+  font-size: 0.8rem;
+  color: var(--app-text-secondary);
+}
+
+.productPrice {
+  font-weight: 700;
+  color: var(--app-text);
+}
+
+.itemActions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.actionButton {
+  background: var(--app-surface);
+  border: 1px solid var(--app-glass-border);
+  color: var(--app-text);
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.85rem;
+  transition: background-color 0.2s;
+}
+
+.actionButton:active {
+  background-color: var(--app-surface-hover);
+}
+
+.actionButton:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+/* Modal Styling */
+.modalOverlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+}
+
+.modal {
+  width: 100%;
+  max-width: 480px;
+  margin: 0 auto;
+  background: var(--tg-theme-secondary-bg-color, #16162a);
+  border-top: 1px solid var(--app-glass-border);
+  border-radius: var(--app-radius-lg) var(--app-radius-lg) 0 0;
+  padding: 20px;
+  box-sizing: border-box;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, 0.4);
+}
+
+.modalHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.modalHeader h2 {
+  font-size: 1.15rem;
+  font-weight: 800;
+  margin: 0;
+}
+
+.closeBtn {
+  background: none;
+  border: none;
+  color: var(--app-text);
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.formError {
+  background: rgba(255, 61, 113, 0.1);
+  border: 1px solid rgba(255, 61, 113, 0.3);
+  color: var(--app-danger);
+  border-radius: var(--app-radius-sm);
+  padding: 10px 12px;
+  font-size: 0.8rem;
+  font-weight: 500;
+}
+
+.formGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.formGroup label {
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--app-text-secondary);
+}
+
+.formGroup input, .formGroup textarea {
+  background: var(--app-glass);
+  border: 1px solid var(--app-glass-border);
+  border-radius: var(--app-radius-sm);
+  padding: 10px 12px;
+  color: var(--app-text);
+  font-family: inherit;
+  font-size: 0.9rem;
+  box-sizing: border-box;
+}
+
+.formGroup input:focus, .formGroup textarea:focus {
+  outline: none;
+  border-color: var(--app-accent);
+}
+
+.formRow {
+  display: flex;
+  gap: 12px;
+}

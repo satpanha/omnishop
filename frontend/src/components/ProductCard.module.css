@@ -1,0 +1,139 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  text-decoration: none;
+  color: var(--app-text);
+  overflow: hidden;
+  height: 100%;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  background: var(--app-glass);
+}
+
+.card:active {
+  transform: scale(0.98);
+}
+
+.imageContainer {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1 / 1;
+  background: rgba(255, 255, 255, 0.02);
+  overflow: hidden;
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.3s ease;
+}
+
+.card:hover .image {
+  transform: scale(1.03);
+}
+
+.placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.5rem;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+}
+
+.stockBadge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 3px 8px;
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
+.stockBadge.in {
+  background: rgba(0, 214, 143, 0.15);
+  color: var(--app-success);
+  border: 1px solid rgba(0, 214, 143, 0.3);
+}
+
+.stockBadge.out {
+  background: rgba(255, 61, 113, 0.15);
+  color: var(--app-danger);
+  border: 1px solid rgba(255, 61, 113, 0.3);
+}
+
+.content {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  flex-grow: 1;
+}
+
+.title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0 0 4px 0;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.description {
+  font-size: 0.8rem;
+  color: var(--app-text-secondary);
+  margin: 0 0 12px 0;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.footer {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.price {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--app-text);
+}
+
+.addButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  background: var(--app-gradient);
+  color: #ffffff;
+  border: none;
+  font-size: 0.8rem;
+  font-weight: 700;
+  padding: 6px 12px;
+  border-radius: var(--app-radius-sm);
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(108, 99, 255, 0.2);
+  transition: transform 0.1s ease, opacity 0.2s;
+}
+
+.addButton:active {
+  transform: scale(0.95);
+}
+
+.addButton.disabled {
+  background: var(--app-surface);
+  color: var(--app-text-secondary);
+  box-shadow: none;
+  cursor: not-allowed;
+}

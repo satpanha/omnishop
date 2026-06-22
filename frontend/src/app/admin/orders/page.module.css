@@ -1,0 +1,152 @@
+.heading {
+  font-size: 1.3rem;
+  font-weight: 800;
+  margin: 0 0 16px 0;
+  color: var(--app-text);
+}
+
+.tabsRow {
+  display: flex;
+  overflow-x: auto;
+  gap: 8px;
+  margin-bottom: 20px;
+  scrollbar-width: none;
+}
+
+.tabsRow::-webkit-scrollbar {
+  display: none;
+}
+
+.tabBtn {
+  flex-shrink: 0;
+  background: var(--app-glass);
+  border: 1px solid var(--app-glass-border);
+  color: var(--app-text-secondary);
+  padding: 6px 14px;
+  border-radius: 16px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.tabBtn.active {
+  background: var(--app-surface-hover);
+  color: var(--app-text);
+  border-color: var(--app-text-secondary);
+}
+
+.ordersContainer {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.orderCard {
+  padding: 16px;
+  display: flex;
+  flex-direction: column;
+}
+
+.orderHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid var(--app-border);
+}
+
+.orderTitle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.orderId {
+  font-size: 0.95rem;
+  font-weight: 800;
+  font-family: monospace;
+}
+
+.platformBadge {
+  font-size: 0.7rem;
+  background: rgba(255, 255, 255, 0.03);
+  padding: 2px 6px;
+  border-radius: 4px;
+  color: var(--app-text-secondary);
+  font-weight: 600;
+}
+
+.orderBody {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.bodyRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.85rem;
+}
+
+.label {
+  color: var(--app-text-secondary);
+}
+
+.value {
+  font-weight: 600;
+}
+
+.value code {
+  font-family: monospace;
+}
+
+.totalPrice {
+  font-weight: 800;
+  font-size: 1rem;
+  color: var(--app-text);
+}
+
+.orderActions {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.btnAction {
+  flex: 1;
+  height: 36px;
+  border: none;
+  font-size: 0.8rem;
+  font-weight: 700;
+  border-radius: var(--app-radius-sm);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s, transform 0.1s;
+}
+
+.btnAction:active {
+  transform: scale(0.97);
+}
+
+.btnPaid {
+  background: var(--app-success);
+  color: #0b1a10;
+}
+
+.btnCancel {
+  background: rgba(255, 61, 113, 0.1);
+  color: var(--app-danger);
+  border: 1px solid rgba(255, 61, 113, 0.2);
+}
+
+.btnRestore {
+  background: var(--app-glass);
+  color: var(--app-text);
+  border: 1px solid var(--app-glass-border);
+}

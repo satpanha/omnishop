@@ -1,0 +1,41 @@
+.selector {
+  display: inline-flex;
+  align-items: center;
+  background: var(--app-glass);
+  border: 1px solid var(--app-glass-border);
+  border-radius: var(--app-radius-sm);
+  padding: 2px;
+  user-select: none;
+}
+
+.button {
+  background: none;
+  border: none;
+  color: var(--app-text);
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background-color 0.2s, opacity 0.2s;
+}
+
+.button:active:not(:disabled) {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+
+.button:disabled {
+  color: var(--app-text-secondary);
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
+.value {
+  font-size: 0.9rem;
+  font-weight: 700;
+  min-width: 28px;
+  text-align: center;
+  color: var(--app-text);
+}

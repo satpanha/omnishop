@@ -1,0 +1,177 @@
+.main {
+  padding-top: 8px;
+}
+
+.backButtonRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.backButton {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: var(--app-glass);
+  border: 1px solid var(--app-glass-border);
+  color: var(--app-text);
+  text-decoration: none;
+  transition: background-color 0.2s;
+}
+
+.backButton:active {
+  background-color: var(--app-surface);
+}
+
+.categoryLabel {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--app-text-secondary);
+}
+
+.imageWrapper {
+  width: 100%;
+  aspect-ratio: 16 / 11;
+  border-radius: var(--app-radius-lg);
+  overflow: hidden;
+  background: var(--app-surface);
+  border: 1px solid var(--app-glass-border);
+  margin-bottom: 20px;
+}
+
+.image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 4rem;
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.03) 0%, rgba(255, 255, 255, 0.01) 100%);
+}
+
+.details {
+  padding: 0 4px;
+}
+
+.titleRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+
+.title {
+  font-size: 1.4rem;
+  font-weight: 800;
+  margin: 0;
+  line-height: 1.25;
+}
+
+.price {
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--app-text);
+  white-space: nowrap;
+}
+
+.stockRow {
+  margin-bottom: 16px;
+}
+
+.stockBadge {
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  display: inline-block;
+}
+
+.stockBadge.in {
+  background: rgba(0, 214, 143, 0.15);
+  color: var(--app-success);
+  border: 1px solid rgba(0, 214, 143, 0.3);
+}
+
+.stockBadge.out {
+  background: rgba(255, 61, 113, 0.15);
+  color: var(--app-danger);
+  border: 1px solid rgba(255, 61, 113, 0.3);
+}
+
+.divider {
+  border: none;
+  border-top: 1px solid var(--app-border);
+  margin: 20px 0;
+}
+
+.descriptionSection h3 {
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin: 0 0 8px 0;
+  color: var(--app-text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.descriptionSection p {
+  font-size: 0.9rem;
+  line-height: 1.6;
+  margin: 0;
+  color: var(--app-text);
+}
+
+/* BottomStickyBar */
+.bottomBar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: var(--tg-theme-bg-color, #1a1a2e);
+  border-top: 1px solid var(--app-glass-border);
+  padding: 12px 16px;
+  z-index: 99;
+}
+
+.bottomBarContainer {
+  max-width: 448px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.quantitySection {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.actionBtn {
+  width: 100%;
+  height: 48px;
+  font-size: 1rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.actionBtn.disabled {
+  background: var(--app-surface);
+  color: var(--app-text-secondary);
+  box-shadow: none;
+  cursor: not-allowed;
+}
