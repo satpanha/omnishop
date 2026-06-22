@@ -1,6 +1,6 @@
 // ─── OmniShop TMA — Telegram Mini App Helpers ───
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
+ 
 
 // ─── Type Declarations ───
 
