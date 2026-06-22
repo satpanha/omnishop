@@ -4,7 +4,8 @@ Products API endpoints.
 
 import uuid
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, Request, UploadFile, status
+from fastapi.concurrency import run_in_threadpool
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func, or_
 
@@ -13,6 +14,7 @@ from app.config import get_settings, Settings
 from app.models.product import Product
 from app.models.seller import Seller
 from app.schemas.product import ProductCreate, ProductUpdate, ProductResponse, ProductList
+from app.services import storage
 
 router = APIRouter()
 
@@ -74,6 +76,52 @@ async def list_products(
     products = result.scalars().all()
 
     return ProductList(items=products, total=total)
+
+
+@router.post("/upload-image", status_code=status.HTTP_201_CREATED)
+async def upload_product_image(
+    request: Request,
+    file: UploadFile = File(...),
+    admin_user: dict = Depends(require_admin),
+):
+    """
+    Upload a product photo (Admin only) and return its public URL.
+
+    The returned ``url`` is what the client should send back as ``image_url``
+    when creating or updating a product. Images are stored on Cloudinary in
+    production, or on the local disk during development.
+    """
+    if file.content_type not in storage.ALLOWED_CONTENT_TYPES:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Unsupported image type. Please upload a JPEG, PNG, WebP, or GIF.",
+        )
+
+    data = await file.read()
+
+    if not data:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The uploaded file is empty.",
+        )
+
+    if len(data) > storage.MAX_UPLOAD_BYTES:
+        raise HTTPException(
+            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
+            detail=f"Image is too large (max {get_settings().MAX_UPLOAD_SIZE_MB} MB).",
+        )
+
+    try:
+        url = await run_in_threadpool(
+            storage.save_image, data, file.content_type, str(request.base_url)
+        )
+    except Exception as exc:  # noqa: BLE001 - surface a clean error to the client
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Image upload failed. Please try again.",
+        ) from exc
+
+    return {"url": url}
 
 
 @router.get("/{product_id}", response_model=ProductResponse)

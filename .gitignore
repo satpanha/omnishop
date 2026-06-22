@@ -14,6 +14,9 @@ venv/
 env/
 *.egg
 
+# Locally-stored product image uploads (dev fallback; prod uses Cloudinary)
+backend/uploads/
+
 # ========================
 # Node.js / Frontend
 # ========================

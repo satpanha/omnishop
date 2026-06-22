@@ -213,6 +213,50 @@ export async function deleteProduct(id: string): Promise<void> {
   });
 }
 
+/**
+ * Upload a product photo and return its public URL.
+ * Sends multipart/form-data — the browser sets the Content-Type boundary, so we
+ * must not set it manually (hence a dedicated fetch rather than apiClient).
+ */
+export async function uploadProductImage(file: File): Promise<{ url: string }> {
+  const form = new FormData();
+  form.append('file', file);
+
+  const headers: Record<string, string> = {};
+  const token = getAuthToken();
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE}/products/upload-image`, {
+      method: 'POST',
+      body: form,
+      headers,
+      credentials: 'include',
+    });
+  } catch (error) {
+    throw new ApiClientError(
+      error instanceof Error ? error.message : 'Network error',
+      0
+    );
+  }
+
+  if (!response.ok) {
+    let errorMessage = `Upload failed: ${response.status}`;
+    try {
+      const errorData = await response.json();
+      errorMessage = errorData.detail || errorMessage;
+    } catch {
+      // Could not parse error body
+    }
+    throw new ApiClientError(errorMessage, response.status);
+  }
+
+  return response.json();
+}
+
 // ─── Transaction API ───
 
 export async function createTransaction(

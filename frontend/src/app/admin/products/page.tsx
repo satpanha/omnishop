@@ -1,11 +1,14 @@
 'use client';
 
 import React, { useEffect, useState } from 'react';
-import { getProducts, createProduct, updateProduct, deleteProduct, type Product } from '@/lib/api';
+import { getProducts, createProduct, updateProduct, deleteProduct, uploadProductImage, type Product } from '@/lib/api';
 import { triggerHaptic } from '@/lib/telegram';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 import EmptyState from '@/components/EmptyState';
 import styles from './page.module.css';
+
+const ACCEPTED_IMAGE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'];
+const MAX_IMAGE_BYTES = 5 * 1024 * 1024; // keep in sync with backend MAX_UPLOAD_SIZE_MB
 
 export default function AdminProducts() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -24,6 +27,8 @@ export default function AdminProducts() {
   });
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
 
   const fetchProducts = () => {
     setLoading(true);
@@ -54,6 +59,7 @@ export default function AdminProducts() {
       image_url: '',
     });
     setSubmitError(null);
+    setUploadError(null);
     setIsModalOpen(true);
   };
 
@@ -67,6 +73,7 @@ export default function AdminProducts() {
       image_url: product.image_url || '',
     });
     setSubmitError(null);
+    setUploadError(null);
     setIsModalOpen(true);
   };
 
@@ -77,6 +84,42 @@ export default function AdminProducts() {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handleImageSelect = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    // Reset the input so re-selecting the same file still fires onChange.
+    e.target.value = '';
+    if (!file) return;
+
+    setUploadError(null);
+
+    if (!ACCEPTED_IMAGE_TYPES.includes(file.type)) {
+      setUploadError('Please choose a JPEG, PNG, WebP, or GIF image.');
+      return;
+    }
+    if (file.size > MAX_IMAGE_BYTES) {
+      setUploadError('Image is too large (max 5 MB).');
+      return;
+    }
+
+    setUploading(true);
+    triggerHaptic('light');
+    try {
+      const { url } = await uploadProductImage(file);
+      setFormData((prev) => ({ ...prev, image_url: url }));
+      triggerHaptic('notification', 'success');
+    } catch (err: any) {
+      triggerHaptic('notification', 'error');
+      setUploadError(err.message || 'Upload failed. Please try again.');
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const handleRemoveImage = () => {
+    setFormData((prev) => ({ ...prev, image_url: '' }));
+    setUploadError(null);
+  };
+
   const handleFormSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitError(null);
@@ -85,10 +128,10 @@ export default function AdminProducts() {
 
     const payload = {
       name: formData.name,
-      description: formData.description || undefined,
+      description: formData.description || "",
       price: parseFloat(formData.price),
       stock_quantity: parseInt(formData.stock_quantity, 10),
-      image_url: formData.image_url || undefined,
+      image_url: formData.image_url || "",
     };
 
     if (isNaN(payload.price) || payload.price < 0) {
@@ -275,20 +318,43 @@ export default function AdminProducts() {
               </div>
 
               <div className={styles.formGroup}>
-                <label htmlFor="image_url">Image URL</label>
-                <input
-                  type="url"
-                  id="image_url"
-                  name="image_url"
-                  value={formData.image_url}
-                  onChange={handleInputChange}
-                  placeholder="https://example.com/image.jpg"
-                />
+                <label>Product Photo</label>
+
+                {formData.image_url ? (
+                  <div className={styles.imagePreview}>
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img src={formData.image_url} alt="Product preview" />
+                    <button
+                      type="button"
+                      className={styles.removeImageBtn}
+                      onClick={handleRemoveImage}
+                      disabled={uploading}
+                      aria-label="Remove image"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <label className={styles.uploadDropzone}>
+                    <input
+                      type="file"
+                      accept="image/jpeg,image/png,image/webp,image/gif"
+                      onChange={handleImageSelect}
+                      disabled={uploading}
+                      hidden
+                    />
+                    <span className={styles.uploadIcon}>{uploading ? '⏳' : '📷'}</span>
+                    <span>{uploading ? 'Uploading…' : 'Tap to upload a photo'}</span>
+                    <small>JPEG, PNG, WebP or GIF · up to 5 MB</small>
+                  </label>
+                )}
+
+                {uploadError && <span className={styles.uploadError}>⚠️ {uploadError}</span>}
               </div>
 
               <button
                 type="submit"
-                disabled={submitting}
+                disabled={submitting || uploading}
                 className="btn-primary w-full mt-4"
                 style={{ height: '44px', fontWeight: 'bold' }}
               >

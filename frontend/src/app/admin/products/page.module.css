@@ -213,3 +213,74 @@
   display: flex;
   gap: 12px;
 }
+
+/* ── Image upload ─────────────────────────────────────────── */
+.uploadDropzone {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 20px 12px;
+  background: var(--app-glass);
+  border: 1px dashed var(--app-glass-border);
+  border-radius: var(--app-radius-sm);
+  color: var(--app-text-secondary);
+  font-size: 0.85rem;
+  text-align: center;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.uploadDropzone:hover {
+  border-color: var(--app-accent);
+}
+
+.uploadDropzone small {
+  font-size: 0.72rem;
+  opacity: 0.7;
+}
+
+.uploadIcon {
+  font-size: 1.5rem;
+}
+
+.imagePreview {
+  position: relative;
+  width: 100%;
+  border-radius: var(--app-radius-sm);
+  overflow: hidden;
+  border: 1px solid var(--app-glass-border);
+}
+
+.imagePreview img {
+  display: block;
+  width: 100%;
+  max-height: 220px;
+  object-fit: cover;
+}
+
+.removeImageBtn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 30px;
+  height: 30px;
+  border: none;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 0.9rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.removeImageBtn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.uploadError {
+  font-size: 0.78rem;
+  color: #ef4444;
+}

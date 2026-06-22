@@ -47,6 +47,16 @@ class Settings(BaseSettings):
     INSTAGRAM_APP_SECRET: str = ""
     INSTAGRAM_ACCESS_TOKEN: str = ""
 
+    # ── Media / Image Uploads ─────────────────────────────────
+    # When CLOUDINARY_URL is set (cloudinary://<key>:<secret>@<cloud>),
+    # product photos are uploaded to Cloudinary. When empty, uploads fall
+    # back to the local UPLOAD_DIR (suitable for local development only —
+    # Render's filesystem is ephemeral and not safe for production media).
+    CLOUDINARY_URL: str = ""
+    CLOUDINARY_FOLDER: str = "omnishop/products"
+    UPLOAD_DIR: str = "uploads"
+    MAX_UPLOAD_SIZE_MB: int = 5
+
     # ── App ───────────────────────────────────────────────────
     FRONTEND_URL: str = "http://localhost:3000"
     ENVIRONMENT: str = "development"
