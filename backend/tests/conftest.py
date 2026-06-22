@@ -3,6 +3,7 @@ Pytest configuration and fixtures.
 Configures an in-memory SQLite database for async integration tests.
 """
 
+import os
 import asyncio
 from datetime import timedelta
 import pytest
@@ -10,9 +11,13 @@ from typing import AsyncGenerator, Generator
 from httpx import AsyncClient, ASGITransport
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 
+# Force development mode so mock auth tests work
+os.environ["ENVIRONMENT"] = "development"
+
 from app.main import app
 from app.config import get_settings
-from app.database import Base, get_db
+from app.database import Base
+from app.api.deps import get_db
 from app.auth.jwt_handler import create_access_token
 
 # Use async SQLite for testing
