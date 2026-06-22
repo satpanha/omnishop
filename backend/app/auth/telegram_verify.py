@@ -41,6 +41,9 @@ def validate_init_data(init_data: str, bot_token: str) -> dict:
     Raises:
         HTTPException(401): If validation fails for any reason.
     """
+    # Strip any accidental whitespace that may come from environment variables
+    bot_token = bot_token.strip()
+    init_data = init_data.strip()
     try:
         # Step 1: Parse query string
         parsed = parse_qs(init_data, keep_blank_values=True)

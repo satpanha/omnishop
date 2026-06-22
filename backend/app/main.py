@@ -64,8 +64,9 @@ settings = get_settings()
 app.add_middleware(RateLimiterMiddleware)
 
 # CORS configuration — include all common local dev ports
+frontend_url = settings.FRONTEND_URL.strip()
 origins = [
-    settings.FRONTEND_URL,
+    frontend_url,
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://localhost:3001",

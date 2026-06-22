@@ -37,6 +37,12 @@ class Settings(BaseSettings):
     TELEGRAM_WEBHOOK_SECRET: str
     ADMIN_TELEGRAM_ID: int
 
+    @field_validator("TELEGRAM_BOT_TOKEN", "TELEGRAM_WEBHOOK_SECRET", "JWT_SECRET_KEY", mode="before")
+    @classmethod
+    def strip_whitespace(cls, v: str) -> str:
+        """Strip accidental leading/trailing whitespace from token values."""
+        return v.strip() if isinstance(v, str) else v
+
     # ── JWT Auth ──────────────────────────────────────────────
     JWT_SECRET_KEY: str
     JWT_ALGORITHM: str = "HS256"
@@ -60,6 +66,12 @@ class Settings(BaseSettings):
     # ── App ───────────────────────────────────────────────────
     FRONTEND_URL: str = "http://localhost:3000"
     ENVIRONMENT: str = "development"
+
+    @field_validator("FRONTEND_URL", "ENVIRONMENT", mode="before")
+    @classmethod
+    def strip_url_whitespace(cls, v: str) -> str:
+        """Strip accidental leading/trailing whitespace from URL/env values."""
+        return v.strip() if isinstance(v, str) else v
 
     model_config = SettingsConfigDict(
         env_file=".env",
