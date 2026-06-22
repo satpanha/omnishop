@@ -21,28 +21,27 @@ let authPromise: Promise<AuthResponse | null> | null = null;
  * Returns the auth response or null if authentication fails.
  */
 export async function initAuth(initData: string): Promise<AuthResponse | null> {
-  // Prevent duplicate auth calls
   if (authPromise) {
     return authPromise;
   }
 
   authPromise = (async () => {
-    try {
-      const response = await authenticateTelegram(initData);
-      currentUser = response.user;
-      setAuthToken(response.access_token);
-      return response;
-    } catch (error) {
-      console.error('Authentication failed:', error);
-      currentUser = null;
-      setAuthToken(null);
-      return null;
-    } finally {
-      authPromise = null;
-    }
+    const response = await authenticateTelegram(initData);
+    currentUser = response.user;
+    setAuthToken(response.access_token);
+    return response;
   })();
 
-  return authPromise;
+  try {
+    return await authPromise;
+  } catch (error) {
+    console.error('Authentication failed:', error);
+    currentUser = null;
+    setAuthToken(null);
+    throw error;
+  } finally {
+    authPromise = null;
+  }
 }
 
 /**

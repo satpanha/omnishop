@@ -8,11 +8,13 @@ import { setUser } from '@/lib/auth';
 interface TelegramContextType {
   isReady: boolean;
   isInTelegram: boolean;
+  authError: string | null;
 }
 
 const TelegramContext = createContext<TelegramContextType>({
   isReady: false,
   isInTelegram: false,
+  authError: null,
 });
 
 export const useTelegram = () => useContext(TelegramContext);
@@ -20,7 +22,7 @@ export const useTelegram = () => useContext(TelegramContext);
 export default function TelegramProvider({ children }: { children: React.ReactNode }) {
   const [isReady, setIsReady] = useState(false);
   const [isInTelegram, setIsInTelegram] = useState(false);
-  const { authenticate } = useAuth();
+  const { authenticate, error } = useAuth();
 
   useEffect(() => {
     const isTg = isTelegramEnvironment();
@@ -33,7 +35,7 @@ export default function TelegramProvider({ children }: { children: React.ReactNo
       setHeaderColor('#1a1a2e'); // match dark theme bg
 
       // Authenticate with Telegram backend
-      authenticate().then(() => {
+      authenticate().finally(() => {
         setIsReady(true);
       });
     } else {
@@ -55,8 +57,25 @@ export default function TelegramProvider({ children }: { children: React.ReactNo
   }, [authenticate]);
 
   return (
-    <TelegramContext.Provider value={{ isReady, isInTelegram }}>
-      {isReady ? children : (
+    <TelegramContext.Provider value={{ isReady, isInTelegram, authError: error }}>
+      {isReady ? (
+        <>
+          {error && (
+            <div style={{
+              background: '#5c1a1a',
+              color: '#ff8a8a',
+              padding: '12px 16px',
+              textAlign: 'center',
+              fontSize: '14px',
+              fontFamily: 'system-ui, sans-serif',
+              borderBottom: '1px solid #7a2a2a',
+            }}>
+              Auth error: {error}
+            </div>
+          )}
+          {children}
+        </>
+      ) : (
         <div style={{
           display: 'flex',
           flexDirection: 'column',
@@ -69,6 +88,11 @@ export default function TelegramProvider({ children }: { children: React.ReactNo
         }}>
           <div className="shimmer" style={{ width: '40px', height: '40px', borderRadius: '50%', marginBottom: '16px' }} />
           <span>Syncing with Telegram...</span>
+          {error && (
+            <span style={{ color: '#ff8a8a', marginTop: '12px', fontSize: '14px' }}>
+              {error}
+            </span>
+          )}
         </div>
       )}
     </TelegramContext.Provider>
