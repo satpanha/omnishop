@@ -42,26 +42,62 @@ class TelegramService:
                 await asyncio.sleep(attempt * 1.5)
         return None
 
-    async def send_message(self, chat_id: int | str, text: str, parse_mode: str = "HTML") -> bool:
-        """Send a text message to a user/chat."""
-        payload = {
+    async def send_message(
+        self,
+        chat_id: int | str,
+        text: str,
+        parse_mode: str = "HTML",
+        reply_markup: Optional[Dict[str, Any]] = None,
+    ) -> bool:
+        """Send a text message to a user/chat, optionally with an inline keyboard."""
+        payload: Dict[str, Any] = {
             "chat_id": chat_id,
             "text": text,
             "parse_mode": parse_mode,
         }
+        if reply_markup is not None:
+            payload["reply_markup"] = reply_markup
         res = await self._post_with_retry("sendMessage", payload)
         return res is not None and res.get("ok") is True
 
-    async def send_photo(self, chat_id: int | str, photo_url: str, caption: str, parse_mode: str = "HTML") -> bool:
-        """Send a photo with a caption to a user/chat."""
-        payload = {
+    async def send_photo(
+        self,
+        chat_id: int | str,
+        photo_url: str,
+        caption: str,
+        parse_mode: str = "HTML",
+        reply_markup: Optional[Dict[str, Any]] = None,
+    ) -> bool:
+        """Send a photo with a caption to a user/chat, optionally with a keyboard."""
+        payload: Dict[str, Any] = {
             "chat_id": chat_id,
             "photo": photo_url,
             "caption": caption,
             "parse_mode": parse_mode,
         }
+        if reply_markup is not None:
+            payload["reply_markup"] = reply_markup
         res = await self._post_with_retry("sendPhoto", payload)
         return res is not None and res.get("ok") is True
+
+    async def answer_callback_query(
+        self, callback_query_id: str, text: Optional[str] = None
+    ) -> bool:
+        """Acknowledge an inline-button press so the client stops its spinner."""
+        payload: Dict[str, Any] = {"callback_query_id": callback_query_id}
+        if text is not None:
+            payload["text"] = text
+        res = await self._post_with_retry("answerCallbackQuery", payload)
+        return res is not None and res.get("ok") is True
+
+    @staticmethod
+    def inline_keyboard(buttons: list[list[Dict[str, str]]]) -> Dict[str, Any]:
+        """Build a Telegram inline_keyboard reply_markup from rows of buttons.
+
+        Each button is a dict like ``{"text": "View", "callback_data": "order:..:view"}``
+        or ``{"text": "Pay", "url": "https://.."}``.
+        """
+        return {"inline_keyboard": buttons}
 
     async def close(self) -> None:
         """Clean up HTTP client resources."""

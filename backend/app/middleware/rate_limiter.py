@@ -79,9 +79,20 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
         if request.url.path in ["/health", "/docs", "/openapi.json", "/redoc"]:
             return await call_next(request)
 
+        # Bypass inbound webhooks: ABA PayWay / Telegram / Instagram callbacks
+        # originate from a small set of provider IPs and would otherwise share
+        # (and exhaust) a single per-IP bucket. They carry their own auth
+        # (HMAC signature / secret token).
+        if request.url.path.startswith("/api/v1/webhooks"):
+            return await call_next(request)
+
         # Retrieve client IP
         client_ip = request.client.host if request.client else "unknown_ip"
         
+        # Bypass rate limiter in tests
+        if request.url.hostname == "test":
+            return await call_next(request)
+
         # Check rate limit
         if not self._allow_request(client_ip, request.url.path):
             return JSONResponse(

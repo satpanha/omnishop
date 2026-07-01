@@ -1,0 +1,153 @@
+.panel {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+/* "Waiting for payment" live indicator */
+.waitingRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.pulseDot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #f59e0b;
+  animation: pulse 1.6s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.7); }
+}
+
+.waitingText {
+  font-size: 0.85rem;
+  color: var(--app-text-secondary);
+  font-weight: 600;
+}
+
+/* QR code box */
+.qrWrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 16px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.25);
+  animation: qrAppear 0.4s ease-out;
+}
+
+@keyframes qrAppear {
+  from { opacity: 0; transform: scale(0.92); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.qrCanvas {
+  width: 180px;
+  height: 180px;
+  display: block;
+}
+
+.scanHint {
+  font-size: 0.75rem;
+  color: #555;
+  margin: 0;
+  text-align: center;
+}
+
+/* Amount row */
+.amountRow {
+  display: flex;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 16px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--app-glass-border);
+  border-radius: var(--app-radius-sm);
+}
+
+.amountLabel {
+  font-size: 0.88rem;
+  color: var(--app-text-secondary);
+  font-weight: 500;
+}
+
+.amountValue {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--app-text);
+}
+
+/* KHQR string toggle */
+.khqrDetails {
+  width: 100%;
+}
+
+.khqrSummary {
+  font-size: 0.8rem;
+  color: var(--app-text-secondary);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+}
+.khqrSummary::-webkit-details-marker { display: none; }
+
+.khqrCode {
+  display: block;
+  margin-top: 8px;
+  padding: 10px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--app-glass-border);
+  border-radius: var(--app-radius-sm);
+  font-size: 0.7rem;
+  word-break: break-all;
+  color: var(--app-text-secondary);
+  line-height: 1.5;
+}
+
+/* ABA Pay button */
+.abaBtn {
+  display: block;
+  width: 100%;
+  padding: 14px;
+  text-align: center;
+  border-radius: var(--app-radius);
+  background: linear-gradient(135deg, #e63950 0%, #c0212f 100%);
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: opacity 0.15s, transform 0.1s;
+  box-shadow: 0 4px 16px rgba(196, 30, 58, 0.35);
+}
+
+.abaBtn:hover {
+  opacity: 0.92;
+}
+
+.abaBtn:active {
+  transform: scale(0.98);
+}
+
+/* Auto-update note */
+.autoNote {
+  font-size: 0.78rem;
+  color: var(--app-text-secondary);
+  text-align: center;
+  margin: 0;
+}
+
+/* No payment state */
+.noPayment {
+  text-align: center;
+  padding: 24px;
+  color: var(--app-danger);
+  font-size: 0.9rem;
+}

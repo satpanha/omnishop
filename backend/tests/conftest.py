@@ -13,6 +13,13 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_asyn
 
 # Force development mode so mock auth tests work
 os.environ["ENVIRONMENT"] = "development"
+# Point the app's own engine at an (independent) in-memory SQLite so background
+# notification tasks can never reach a real database; requests use the overridden
+# test session below. Enable the payments feature and set a callback secret so the
+# order/payment/webhook flow is exercisable offline (ABA runs in stub mode).
+os.environ["DATABASE_URL"] = "sqlite+aiosqlite:///:memory:"
+os.environ["PAYMENTS_ENABLED"] = "true"
+os.environ["ABA_PAYWAY_CALLBACK_SECRET"] = "test-callback-secret"
 
 from app.main import app
 from app.config import get_settings

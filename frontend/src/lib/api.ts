@@ -5,6 +5,111 @@ const API_BASE = `${API_URL}/api/v1`;
 
 // ─── Interfaces ───
 
+// ── OmniBot: Orders ──────────────────────────────────────────────────────────
+
+export type OrderStatus =
+  | 'awaiting_payment'
+  | 'paid'
+  | 'preparing'
+  | 'dispatched'
+  | 'delivered'
+  | 'cancelled'
+  | 'payment_expired';
+
+export type PaymentStatus = 'initiated' | 'paid' | 'failed' | 'expired';
+
+export interface PaymentInfo {
+  id: string;
+  provider: string;
+  amount: string;
+  currency: string;
+  khqr_string: string | null;
+  aba_link: string | null;
+  provider_txn_ref: string | null;
+  status: PaymentStatus;
+  paid_at: string | null;
+}
+
+export interface OrderLineItem {
+  id: string;
+  product_id: string;
+  quantity: number;
+  total_price: string;
+}
+
+export interface Order {
+  id: string;
+  seller_id: string;
+  buyer_platform: string;
+  buyer_id: string;
+  total_amount: string;
+  currency: string;
+  status: OrderStatus;
+  delivery_address: string | null;
+  delivery_lat: string | null;
+  delivery_lng: string | null;
+  distance_km: string | null;
+  eta_minutes: number | null;
+  dispatch_at: string | null;
+  created_at: string;
+  updated_at: string;
+  line_items: OrderLineItem[];
+  payment: PaymentInfo | null;
+}
+
+export interface OrderList {
+  items: Order[];
+  total: number;
+}
+
+export interface DeliveryLocation {
+  lat: number;
+  lng: number;
+  address?: string;
+}
+
+export interface CreateOrderPayload {
+  items: { product_id: string; quantity: number }[];
+  delivery?: DeliveryLocation;
+  idempotency_key?: string;
+}
+
+export interface UpdateOrderStatusPayload {
+  status: OrderStatus;
+  eta_minutes?: number;
+  dispatch_at?: string;
+}
+
+// ── OmniBot: Conversations ────────────────────────────────────────────────────
+
+export type ConversationState = 'bot' | 'awaiting_owner' | 'owner_handling' | 'closed';
+
+export interface Message {
+  id: string;
+  conversation_id: string;
+  direction: 'inbound' | 'outbound';
+  sender: 'buyer' | 'owner' | 'bot';
+  text: string;
+  telegram_message_id: string | null;
+  created_at: string;
+}
+
+export interface Conversation {
+  id: string;
+  buyer_platform: string;
+  buyer_id: string;
+  state: ConversationState;
+  last_message_at: string | null;
+  messages?: Message[];
+}
+
+export interface ConversationList {
+  items: Conversation[];
+  total: number;
+}
+
+// ── Products ──────────────────────────────────────────────────────────────────
+
 export interface Product {
   id: string;
   seller_id: string;
@@ -303,3 +408,65 @@ export async function authenticateTelegram(
   });
 }
 
+// ─── Order API ───
+
+export async function createOrder(payload: CreateOrderPayload): Promise<Order> {
+  return apiClient<Order>('/orders', {
+    method: 'POST',
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function getOrder(id: string): Promise<Order> {
+  return apiClient<Order>(`/orders/${id}`);
+}
+
+export async function listOrders(params?: {
+  status?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<OrderList> {
+  const searchParams = new URLSearchParams();
+  if (params?.status) searchParams.set('status', params.status);
+  if (params?.limit) searchParams.set('limit', String(params.limit));
+  if (params?.offset) searchParams.set('offset', String(params.offset));
+  const query = searchParams.toString();
+  return apiClient<OrderList>(`/orders${query ? `?${query}` : ''}`);
+}
+
+export async function updateOrderStatus(
+  id: string,
+  payload: UpdateOrderStatusPayload
+): Promise<Order> {
+  return apiClient<Order>(`/orders/${id}/status`, {
+    method: 'PATCH',
+    body: JSON.stringify(payload),
+  });
+}
+
+// ─── Conversation API ───
+
+export async function listConversations(params?: {
+  limit?: number;
+  offset?: number;
+}): Promise<ConversationList> {
+  const searchParams = new URLSearchParams();
+  if (params?.limit) searchParams.set('limit', String(params.limit));
+  if (params?.offset) searchParams.set('offset', String(params.offset));
+  const query = searchParams.toString();
+  return apiClient<ConversationList>(`/conversations${query ? `?${query}` : ''}`);
+}
+
+export async function getConversation(id: string): Promise<Conversation & { messages: Message[] }> {
+  return apiClient<Conversation & { messages: Message[] }>(`/conversations/${id}`);
+}
+
+export async function sendOwnerMessage(
+  conversationId: string,
+  text: string
+): Promise<Message> {
+  return apiClient<Message>(`/conversations/${conversationId}/messages`, {
+    method: 'POST',
+    body: JSON.stringify({ text }),
+  });
+}

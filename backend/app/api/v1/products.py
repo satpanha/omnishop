@@ -25,9 +25,12 @@ async def get_or_create_default_seller(db: AsyncSession, settings: Settings) -> 
     result = await db.execute(stmt)
     seller = result.scalar_one_or_none()
     if not seller:
+        from decimal import Decimal
         seller = Seller(
             telegram_id=settings.ADMIN_TELEGRAM_ID,
             store_name="My OmniShop",
+            store_lat=Decimal("11.5564"),  # Phnom Penh default (owner can update via admin)
+            store_lng=Decimal("104.9282"),
         )
         db.add(seller)
         await db.commit()

@@ -9,10 +9,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, func
 
 from app.api.deps import get_db, require_admin, get_current_user
+from app.config import get_settings
 from app.models.product import Product
 from app.models.transaction import Transaction
+from app.schemas.order import OrderLineItemCreate
 from app.schemas.transaction import TransactionCreate, TransactionStatusUpdate, TransactionResponse, TransactionList
-from app.services.notifications import notify_new_order
+from app.services import notifications, orders
 
 router = APIRouter()
 
@@ -25,57 +27,28 @@ async def create_transaction(
     current_user: dict = Depends(get_current_user),
 ):
     """
-    Create a new transaction (buyer places an order).
-    Decrements stock, calculates total price, and triggers an admin notification in the background.
+    DEPRECATED — use ``POST /orders`` instead.
+
+    Kept for backward compatibility: wraps a single product into a one-line Order
+    (so stock, totals, and notifications all flow through the new aggregate) and
+    returns the created line item in the legacy Transaction shape.
     """
-    # 1. Fetch product
-    product_stmt = select(Product).where(Product.id == payload.product_id)
-    product_result = await db.execute(product_stmt)
-    product = product_result.scalar_one_or_none()
-
-    if not product:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Product not found",
+    try:
+        order = await orders.create_order(
+            db,
+            buyer_platform="telegram",
+            buyer_id=current_user["sub"],
+            items=[OrderLineItemCreate(product_id=payload.product_id, quantity=payload.quantity)],
         )
-    
-    if not product.is_active:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Product is currently inactive",
-        )
+    except orders.OrderError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.detail) from exc
 
-    # 2. Check stock
-    if product.stock_quantity < payload.quantity:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Insufficient stock. Available: {product.stock_quantity}",
-        )
+    background_tasks.add_task(notifications.notify_owner_new_order, order.id)
+    if get_settings().PAYMENTS_ENABLED and order.payment is not None:
+        background_tasks.add_task(notifications.send_buyer_payment_request, order.id)
 
-    # 3. Decrement stock
-    product.stock_quantity -= payload.quantity
-
-    # 4. Create transaction
-    total_price = product.price * payload.quantity
-    transaction = Transaction(
-        product_id=product.id,
-        buyer_platform="telegram",
-        buyer_id=current_user["sub"],
-        quantity=payload.quantity,
-        total_price=total_price,
-        status="pending",
-    )
-    db.add(transaction)
-    
-    # Commit transaction (which also flushes product stock updates)
-    await db.commit()
-    await db.refresh(transaction)
-    await db.refresh(product)  # to get updated product state for notification
-
-    # 5. Notify admin in background
-    background_tasks.add_task(notify_new_order, db, transaction, product)
-
-    return transaction
+    # Return the single line item in the legacy Transaction shape.
+    return order.line_items[0]
 
 
 @router.get("", response_model=TransactionList)

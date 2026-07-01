@@ -150,3 +150,31 @@
   color: var(--app-text);
   border: 1px solid var(--app-glass-border);
 }
+
+.btnPrimary {
+  background: rgba(0, 169, 255, 0.15);
+  color: #00a9ff;
+  border: 1px solid rgba(0, 169, 255, 0.3);
+}
+
+/* Line items list inside body */
+.lineItems {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.lineItem {
+  font-size: 0.82rem;
+  color: var(--app-text);
+  font-weight: 500;
+}
+
+/* ABA Pay link */
+.abaLink {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: #e63950;
+  text-decoration: underline;
+}

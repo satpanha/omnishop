@@ -13,15 +13,19 @@ from fastapi.staticfiles import StaticFiles
 
 from app.config import get_settings
 from app.database import engine, Base
+from app.middleware.correlation_id import CorrelationIdFilter, CorrelationIdMiddleware
 from app.middleware.rate_limiter import RateLimiterMiddleware
 from app.api.v1.router import router as api_v1_router
 from app.services import storage
 
-# Configure logging
+# Configure structured logging with correlation ID support
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] %(name)s: %(message)s",
+    format="%(asctime)s [%(levelname)s] %(name)s [cid=%(correlation_id)s]: %(message)s",
 )
+_cid_filter = CorrelationIdFilter()
+for _handler in logging.getLogger().handlers:
+    _handler.addFilter(_cid_filter)
 logger = logging.getLogger(__name__)
 
 
@@ -59,6 +63,9 @@ app = FastAPI(
 )
 
 settings = get_settings()
+
+# Correlation ID must wrap everything so the ID is available during rate limiting.
+app.add_middleware(CorrelationIdMiddleware)
 
 # Rate Limiter middleware
 app.add_middleware(RateLimiterMiddleware)

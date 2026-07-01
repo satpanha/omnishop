@@ -208,3 +208,22 @@
   0% { transform: scale(0.8); opacity: 0; }
   100% { transform: scale(1); opacity: 1; }
 }
+
+/* ETA hint inside delivery card */
+.etaHint {
+  margin: 8px 0 0;
+  font-size: 0.8rem;
+  color: var(--app-text-secondary);
+}
+
+/* ETA badge in success card */
+.etaBadge {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--app-text-secondary);
+  background: rgba(0, 214, 143, 0.1);
+  border: 1px solid rgba(0, 214, 143, 0.25);
+  border-radius: 20px;
+  padding: 6px 16px;
+  margin: 0 0 8px;
+}

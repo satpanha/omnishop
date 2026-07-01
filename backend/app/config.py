@@ -37,7 +37,14 @@ class Settings(BaseSettings):
     TELEGRAM_WEBHOOK_SECRET: str
     ADMIN_TELEGRAM_ID: int
 
-    @field_validator("TELEGRAM_BOT_TOKEN", "TELEGRAM_WEBHOOK_SECRET", "JWT_SECRET_KEY", mode="before")
+    @field_validator(
+        "TELEGRAM_BOT_TOKEN",
+        "TELEGRAM_WEBHOOK_SECRET",
+        "JWT_SECRET_KEY",
+        "ABA_PAYWAY_API_KEY",
+        "ABA_PAYWAY_CALLBACK_SECRET",
+        mode="before",
+    )
     @classmethod
     def strip_whitespace(cls, v: str) -> str:
         """Strip accidental leading/trailing whitespace from token values."""
@@ -63,6 +70,28 @@ class Settings(BaseSettings):
     UPLOAD_DIR: str = "uploads"
     MAX_UPLOAD_SIZE_MB: int = 5
 
+    # ── OmniBot: Payments (ABA PayWay) ────────────────────────
+    # Master feature flag. When False, checkout uses the legacy "manual payment
+    # verification" flow and no payment/order automation runs — so the feature
+    # can be shipped dark and enabled without a redeploy.
+    PAYMENTS_ENABLED: bool = False
+    # ABA PayWay credentials. When any are blank the PayWay service runs in a
+    # deterministic STUB mode (safe for dev/tests); production must set all three.
+    ABA_PAYWAY_BASE_URL: str = "https://checkout.payway.com.kh"
+    ABA_PAYWAY_MERCHANT_ID: str = ""
+    ABA_PAYWAY_API_KEY: str = ""
+    # Shared secret used to verify the HMAC signature on PayWay callbacks.
+    ABA_PAYWAY_CALLBACK_SECRET: str = ""
+    PAYMENT_CURRENCY: str = "USD"
+    # How long an order may sit in awaiting_payment before it auto-expires.
+    PAYMENT_TTL_MINUTES: int = 30
+
+    # ── OmniBot: Delivery / ETA estimation ────────────────────
+    # Average effective delivery speed (km/h) used by the haversine ETA fallback.
+    DELIVERY_SPEED_KMH: float = 20.0
+    # Fixed prep time added to travel time for the ETA estimate.
+    DELIVERY_BASE_PREP_MINUTES: int = 15
+
     # ── App ───────────────────────────────────────────────────
     FRONTEND_URL: str = "http://localhost:3000"
     ENVIRONMENT: str = "development"
@@ -72,6 +101,15 @@ class Settings(BaseSettings):
     def strip_url_whitespace(cls, v: str) -> str:
         """Strip accidental leading/trailing whitespace from URL/env values."""
         return v.strip() if isinstance(v, str) else v
+
+    @property
+    def aba_payway_configured(self) -> bool:
+        """True when live ABA PayWay credentials are present (else stub mode)."""
+        return bool(
+            self.ABA_PAYWAY_MERCHANT_ID
+            and self.ABA_PAYWAY_API_KEY
+            and self.ABA_PAYWAY_CALLBACK_SECRET
+        )
 
     model_config = SettingsConfigDict(
         env_file=".env",

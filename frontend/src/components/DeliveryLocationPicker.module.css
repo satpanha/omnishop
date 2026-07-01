@@ -1,0 +1,144 @@
+.idle {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hint {
+  font-size: 0.82rem;
+  color: var(--app-text-secondary);
+  margin: 0;
+}
+
+.idleButtons {
+  display: flex;
+  gap: 8px;
+}
+
+.modeBtn {
+  flex: 1;
+  padding: 10px 8px;
+  border-radius: var(--app-radius-sm);
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid var(--app-glass-border);
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  background: var(--app-glass);
+  color: var(--app-text);
+}
+
+.gpsBtn:hover {
+  background: rgba(0, 169, 255, 0.12);
+  border-color: rgba(0, 169, 255, 0.4);
+}
+
+.manualBtn:hover {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* GPS loading state */
+.resolving {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 0;
+  font-size: 0.85rem;
+  color: var(--app-text-secondary);
+}
+
+.spinner {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border: 2px solid rgba(0, 169, 255, 0.3);
+  border-top-color: #00a9ff;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Resolved GPS row */
+.resolved {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: rgba(0, 169, 255, 0.08);
+  border: 1px solid rgba(0, 169, 255, 0.25);
+  border-radius: var(--app-radius-sm);
+}
+
+.pin {
+  font-size: 1rem;
+  flex-shrink: 0;
+}
+
+.address {
+  flex: 1;
+  font-size: 0.83rem;
+  color: var(--app-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Manual input row */
+.manual {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.addressInput {
+  flex: 1;
+  padding: 10px 12px;
+  border-radius: var(--app-radius-sm);
+  border: 1px solid var(--app-glass-border);
+  background: var(--app-surface);
+  color: var(--app-text);
+  font-size: 0.88rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.addressInput:focus {
+  border-color: rgba(0, 169, 255, 0.5);
+}
+
+.addressInput::placeholder {
+  color: var(--app-text-secondary);
+}
+
+/* Clear / cancel button */
+.clearBtn {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid var(--app-glass-border);
+  background: var(--app-glass);
+  color: var(--app-text-secondary);
+  font-size: 0.8rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.clearBtn:hover {
+  background: rgba(255, 61, 113, 0.15);
+  color: var(--app-danger);
+  border-color: rgba(255, 61, 113, 0.3);
+}
+
+.error {
+  font-size: 0.8rem;
+  color: var(--app-danger);
+  margin: 4px 0 0;
+}

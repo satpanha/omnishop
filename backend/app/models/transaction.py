@@ -24,6 +24,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.database import Base
 
 if TYPE_CHECKING:
+    from app.models.order import Order
     from app.models.product import Product
 
 
@@ -33,6 +34,13 @@ class Transaction(Base):
         CheckConstraint("quantity > 0", name="quantity_positive"),
     )
 
+    order_id: Mapped[uuid.UUID | None] = mapped_column(
+        PG_UUID(as_uuid=True),
+        ForeignKey("order.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+        comment="Parent Order (line item). Nullable only during the backfill window.",
+    )
     product_id: Mapped[uuid.UUID] = mapped_column(
         PG_UUID(as_uuid=True),
         ForeignKey("product.id", ondelete="CASCADE"),
@@ -65,6 +73,10 @@ class Transaction(Base):
     )
 
     # ── Relationships ─────────────────────────────────────────
+    order: Mapped[Order | None] = relationship(
+        "Order",
+        back_populates="line_items",
+    )
     product: Mapped[Product] = relationship(
         "Product",
         back_populates="transactions",
