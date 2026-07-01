@@ -3,7 +3,7 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import { isTelegramEnvironment, signalReady, expandViewport, setHeaderColor } from '@/lib/telegram';
 import { useAuth } from '@/hooks/useAuth';
-import { setUser } from '@/lib/auth';
+import { setUser, initAuth } from '@/lib/auth';
 
 interface TelegramContextType {
   isReady: boolean;
@@ -42,17 +42,21 @@ export default function TelegramProvider({ children }: { children: React.ReactNo
       // Development/Local browser fallback
       console.log('Running outside of Telegram. Mocking session for testing.');
       
-      // Auto-set a mock admin user for local preview
+      // Auto-set a mock admin user for local preview and fetch mock JWT token
       if (process.env.NODE_ENV === 'development') {
-        setUser({
-          telegram_id: 123456789,
-          first_name: 'Store',
-          last_name: 'Owner',
-          username: 'admin',
-          is_admin: true,
-        });
+        initAuth('mock_admin')
+          .then(() => {
+            console.log('Mock admin token retrieved successfully.');
+          })
+          .catch((err) => {
+            console.error('Failed to get mock token:', err);
+          })
+          .finally(() => {
+            setIsReady(true);
+          });
+      } else {
+        setIsReady(true);
       }
-      setIsReady(true);
     }
   }, [authenticate]);
 
