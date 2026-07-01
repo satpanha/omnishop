@@ -27,21 +27,7 @@ async def authenticate_telegram(
     Authenticate a user coming from the Telegram Mini App.
     Validates initData, determines role, and issues a JWT token.
     """
-    # In development mode, we can bypass validation if the string is simple or mock
-    if settings.ENVIRONMENT == "development" and payload.initData.startswith("mock_"):
-        # Create a mock user based on the mock string
-        mock_id = 999999999
-        if "admin" in payload.initData:
-            mock_id = settings.ADMIN_TELEGRAM_ID
-        
-        user_data = {
-            "id": mock_id,
-            "first_name": "Mock",
-            "last_name": "User",
-            "username": "mock_user",
-        }
-    else:
-        user_data = validate_init_data(payload.initData, settings.TELEGRAM_BOT_TOKEN)
+    user_data = validate_init_data(payload.initData, settings.TELEGRAM_BOT_TOKEN)
 
     telegram_id = user_data["id"]
     is_admin = (telegram_id == settings.ADMIN_TELEGRAM_ID)

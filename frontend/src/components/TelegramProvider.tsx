@@ -40,23 +40,8 @@ export default function TelegramProvider({ children }: { children: React.ReactNo
       });
     } else {
       // Development/Local browser fallback
-      console.log('Running outside of Telegram. Mocking session for testing.');
-      
-      // Auto-set a mock admin user for local preview and fetch mock JWT token
-      if (process.env.NODE_ENV === 'development') {
-        initAuth('mock_admin')
-          .then(() => {
-            console.log('Mock admin token retrieved successfully.');
-          })
-          .catch((err) => {
-            console.error('Failed to get mock token:', err);
-          })
-          .finally(() => {
-            setIsReady(true);
-          });
-      } else {
-        setIsReady(true);
-      }
+      console.log('Running outside of Telegram.');
+      setIsReady(true);
     }
   }, [authenticate]);
 
