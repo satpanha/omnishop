@@ -137,7 +137,10 @@ async def update_order_status(
     except InvalidTransition as exc:
         raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc
 
-    if payload.status in ("dispatched", "delivered", "cancelled", "payment_expired"):
+    # Notify the buyer of every meaningful status change.
+    if payload.status == "paid":
+        background_tasks.add_task(notifications.send_buyer_invoice, order.id)
+    elif payload.status in ("preparing", "dispatched", "delivered", "cancelled", "payment_expired"):
         background_tasks.add_task(
             notifications.send_buyer_status_update, order.id, payload.status
         )

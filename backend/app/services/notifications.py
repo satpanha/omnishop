@@ -247,7 +247,9 @@ async def send_buyer_status_update(order_id, status: str) -> None:
         if order is None:
             return
 
-    if status == "dispatched":
+    if status == "preparing":
+        text = "<b>👨‍🍳 Your order is being prepared!</b> We'll notify you when it's on the way."
+    elif status == "dispatched":
         eta = f" Arriving in ~{order.eta_minutes} min." if order.eta_minutes else ""
         text = f"<b>📦 Your order is on the way!</b>{eta}"
     elif status == "delivered":

@@ -16,6 +16,7 @@
 'use client';
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { QRCodeSVG } from 'qrcode.react';
 import type { Order, OrderStatus } from '@/lib/api';
 import { getOrder } from '@/lib/api';
 import styles from './PaymentQRPanel.module.css';
@@ -26,67 +27,6 @@ const MAX_POLLS = 200; // stop after ~10 minutes
 interface Props {
   order: Order;
   onStatusChange: (status: OrderStatus) => void;
-}
-
-/**
- * Minimal canvas-based QR code renderer that doesn't require any npm packages.
- * Uses the browser's Canvas 2D API with a precomputed data matrix approach.
- *
- * For production this should be replaced with qrcode.react or react-qr-code,
- * but this implementation works fully offline without additional deps.
- */
-function QRFallback({ value }: { value: string }) {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    // Render a simple placeholder grid visualisation.  Real QR encoding is
-    // non-trivial; in production replace this with qrcode.react.
-    const size = 180;
-    canvas.width = size;
-    canvas.height = size;
-    const cells = 25;
-    const cell = size / cells;
-
-    ctx.fillStyle = '#fff';
-    ctx.fillRect(0, 0, size, size);
-    ctx.fillStyle = '#000';
-
-    // Hash the value string into a deterministic bit pattern.
-    let hash = 0;
-    for (let i = 0; i < value.length; i++) {
-      hash = ((hash << 5) - hash + value.charCodeAt(i)) | 0;
-    }
-    const rng = (seed: number) => {
-      const x = Math.sin(seed + hash) * 10000;
-      return x - Math.floor(x);
-    };
-
-    for (let r = 0; r < cells; r++) {
-      for (let c = 0; c < cells; c++) {
-        // Always draw the three finder patterns.
-        const inFinder =
-          (r < 8 && c < 8) || (r < 8 && c >= cells - 8) || (r >= cells - 8 && c < 8);
-        if (inFinder) {
-          const borderR = r < 8 && r >= 0 ? r === 0 || r === 6 : r === cells - 8 || r === cells - 2;
-          const borderC = c < 8 ? c === 0 || c === 6 : c === cells - 8 || c === cells - 2;
-          const insideR = r < 8 ? r >= 2 && r <= 4 : r >= cells - 6 && r <= cells - 4;
-          const insideC = c < 8 ? c >= 2 && c <= 4 : c >= cells - 6 && c <= cells - 4;
-          if (borderR || borderC || (insideR && insideC)) {
-            ctx.fillRect(c * cell, r * cell, cell, cell);
-          }
-        } else if (rng(r * cells + c) > 0.45) {
-          ctx.fillRect(c * cell, r * cell, cell, cell);
-        }
-      }
-    }
-  }, [value]);
-
-  return <canvas ref={canvasRef} className={styles.qrCanvas} aria-label="KHQR Code" />;
 }
 
 
@@ -147,7 +87,14 @@ export default function PaymentQRPanel({ order, onStatusChange }: Props) {
 
       {payment.khqr_string && (
         <div className={styles.qrWrapper}>
-          <QRFallback value={payment.khqr_string} />
+          <QRCodeSVG
+            value={payment.khqr_string}
+            size={200}
+            bgColor="#ffffff"
+            fgColor="#000000"
+            level="M"
+            className={styles.qrCanvas}
+          />
           <p className={styles.scanHint}>Scan with any Cambodian banking app</p>
         </div>
       )}

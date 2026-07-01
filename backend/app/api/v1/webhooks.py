@@ -101,7 +101,21 @@ async def _handle_callback_query(db: AsyncSession, cq: dict) -> None:
             return
 
         try:
-            order = await orders.transition_order(db, order, target)
+            if target == "paid":
+                # Settle the Payment record properly (status + paid_at),
+                # then advance the order. Falls back to transition_order
+                # if no Payment row exists (legacy / manual orders).
+                payment = (
+                    await db.execute(
+                        select(Payment).where(Payment.order_id == order.id)
+                    )
+                ).scalar_one_or_none()
+                if payment is not None:
+                    order = await orders.apply_payment_success(db, payment)
+                else:
+                    order = await orders.transition_order(db, order, target)
+            else:
+                order = await orders.transition_order(db, order, target)
         except InvalidTransition:
             await tg.answer_callback_query(cq_id, f"Can't move to {target} now")
             return
@@ -110,11 +124,13 @@ async def _handle_callback_query(db: AsyncSession, cq: dict) -> None:
     finally:
         await tg.close()
 
-    # Buyer notifications (best-effort; each guards its own errors).
-    if target in ("dispatched", "delivered", "cancelled"):
-        await notifications.send_buyer_status_update(order_id, target)
-    elif target == "paid":
+    # Buyer notifications for every transition.
+    if target == "paid":
         await notifications.send_buyer_invoice(order_id)
+        # Also send the owner a follow-up with "dispatch" button.
+        await notifications.notify_owner_order_paid(order_id)
+    elif target in ("dispatched", "delivered", "cancelled"):
+        await notifications.send_buyer_status_update(order_id, target)
 
 
 async def _handle_telegram_message(db: AsyncSession, message: dict) -> None:
