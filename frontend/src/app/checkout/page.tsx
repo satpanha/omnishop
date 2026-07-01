@@ -38,6 +38,12 @@ export default function CheckoutPage() {
   const [order, setOrder] = useState<Order | null>(null);
   const [paidStatus, setPaidStatus] = useState<OrderStatus | null>(null);
 
+  // Called by PaymentQRPanel when the order transitions away from awaiting_payment.
+  const handlePaymentStatusChange = useCallback((status: OrderStatus) => {
+    setPaidStatus(status);
+    setPhase('success');
+  }, []);
+
   // ── Empty cart guard ────────────────────────────────────────────────
   if (items.length === 0 && phase === 'review') {
     return (
@@ -87,12 +93,6 @@ export default function CheckoutPage() {
       setPhase('review');
     }
   };
-
-  // Called by PaymentQRPanel when the order transitions away from awaiting_payment.
-  const handlePaymentStatusChange = useCallback((status: OrderStatus) => {
-    setPaidStatus(status);
-    setPhase('success');
-  }, []);
 
   // ── Success view ─────────────────────────────────────────────────────
   if (phase === 'success' && order) {

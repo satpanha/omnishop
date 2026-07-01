@@ -12,7 +12,7 @@
  *   • Action buttons that drive the fulfillment state machine
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import {
   listOrders,
   updateOrderStatus,
@@ -62,7 +62,7 @@ export default function AdminOrders() {
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState('all');
 
-  const fetchOrders = () => {
+  const fetchOrders = useCallback(() => {
     setLoading(true);
     const params = activeTab === 'all' ? { limit: 100 } : { status: activeTab, limit: 100 };
     listOrders(params)
@@ -74,11 +74,11 @@ export default function AdminOrders() {
         setError(err.message || 'Failed to load orders');
       })
       .finally(() => setLoading(false));
-  };
+  }, [activeTab]);
 
   useEffect(() => {
     fetchOrders();
-  }, [activeTab]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [fetchOrders]);
 
   const handleAction = async (order: Order, target: OrderStatus) => {
     triggerHaptic('medium');
