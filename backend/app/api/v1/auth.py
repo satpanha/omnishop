@@ -2,6 +2,8 @@
 Authentication API endpoints.
 """
 
+import logging
+import uuid
 from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -13,7 +15,39 @@ from app.config import get_settings, Settings
 from app.models.seller import Seller
 from app.schemas.auth import AdminLoginRequest, AuthResponse, TelegramAuthRequest, UserInfo
 
+logger = logging.getLogger(__name__)
 router = APIRouter()
+
+
+@router.post("/guest", response_model=AuthResponse)
+async def authenticate_guest(
+    response: Response,
+    db: AsyncSession = Depends(get_db),
+    settings: Settings = Depends(get_settings),
+):
+    """
+    Issue a guest buyer session for users checking out via direct links,
+    web browsers, or when Telegram initData is unavailable.
+    """
+    guest_id = f"guest_{uuid.uuid4().hex[:10]}"
+    token_payload = {
+        "sub": guest_id,
+        "role": "buyer",
+    }
+    token = create_access_token(token_payload)
+    set_auth_cookie(response, token)
+
+    return AuthResponse(
+        access_token=token,
+        token_type="bearer",
+        user=UserInfo(
+            telegram_id=0,
+            first_name="Guest",
+            last_name="Shopper",
+            username=guest_id,
+            is_admin=False,
+        ),
+    )
 
 
 @router.post("/telegram", response_model=AuthResponse)
@@ -27,7 +61,12 @@ async def authenticate_telegram(
     Authenticate a user coming from the Telegram Mini App.
     Validates initData, determines role, and issues a JWT token.
     """
-    user_data = validate_init_data(payload.initData, settings.TELEGRAM_BOT_TOKEN)
+    logger.info("Telegram auth attempt (initData len=%d)", len(payload.initData) if payload.initData else 0)
+    try:
+        user_data = validate_init_data(payload.initData, settings.TELEGRAM_BOT_TOKEN)
+    except HTTPException as exc:
+        logger.warning("Telegram auth validation rejected: %s", exc.detail)
+        raise
 
     telegram_id = user_data["id"]
     is_admin = (telegram_id == settings.ADMIN_TELEGRAM_ID)

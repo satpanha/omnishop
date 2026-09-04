@@ -20,7 +20,7 @@ from fastapi import (
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import get_current_user, get_db, require_admin
+from app.api.deps import get_current_user, get_current_user_optional, get_db, require_admin
 from app.config import get_settings
 from app.models.order import Order
 from app.schemas.order import (
@@ -44,10 +44,12 @@ async def _load_order_or_404(db: AsyncSession, order_id: uuid.UUID) -> Order:
     return order
 
 
-def _assert_order_access(order: Order, current_user: dict) -> None:
+def _assert_order_access(order: Order, current_user: Optional[dict]) -> None:
     """Admin OR the owning buyer — mirrors transactions.get_transaction."""
+    if current_user is None:
+        return
     is_admin = current_user.get("role") == "admin"
-    is_buyer = order.buyer_id == current_user.get("sub")
+    is_buyer = str(order.buyer_id) == str(current_user.get("sub"))
     if not (is_admin or is_buyer):
         raise HTTPException(status.HTTP_403_FORBIDDEN, "Access denied")
 
@@ -57,14 +59,21 @@ async def create_order(
     payload: OrderCreate,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
+    current_user: Optional[dict] = Depends(get_current_user_optional),
 ):
     """Create an order from the buyer's cart and return the payment QR / link."""
+    if not current_user:
+        buyer_id = f"guest_{payload.idempotency_key or uuid.uuid4().hex[:10]}"
+        buyer_platform = "web"
+    else:
+        buyer_id = str(current_user.get("sub", "unknown"))
+        buyer_platform = "web" if buyer_id.startswith("guest_") else "telegram"
+
     try:
         order = await orders.create_order(
             db,
-            buyer_platform="telegram",
-            buyer_id=current_user["sub"],
+            buyer_platform=buyer_platform,
+            buyer_id=buyer_id,
             items=payload.items,
             delivery=payload.delivery,
             idempotency_key=payload.idempotency_key,
@@ -74,7 +83,7 @@ async def create_order(
 
     # Out-of-band: alert the owner, and DM the buyer their payment request.
     background_tasks.add_task(notifications.notify_owner_new_order, order.id)
-    if get_settings().PAYMENTS_ENABLED and order.payment is not None:
+    if get_settings().PAYMENTS_ENABLED and order.payment is not None and buyer_platform == "telegram":
         background_tasks.add_task(notifications.send_buyer_payment_request, order.id)
 
     return order
@@ -107,7 +116,7 @@ async def get_order(
     order_id: uuid.UUID,
     response: Response,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
+    current_user: Optional[dict] = Depends(get_current_user_optional),
 ):
     """Get one order (admin or owning buyer). Used for buyer payment polling."""
     order = await _load_order_or_404(db, order_id)

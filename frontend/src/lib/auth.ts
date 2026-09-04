@@ -2,6 +2,7 @@
 
 import {
   authenticateTelegram,
+  guestLogin,
   adminLogin as apiAdminLogin,
   getMe,
   logoutApi,
@@ -58,15 +59,20 @@ export async function loginWithAdminPassword(password: string): Promise<AuthResp
 }
 
 /**
- * Try to authenticate automatically from Telegram context or stored session.
+ * Try to authenticate automatically from Telegram context or stored session,
+ * falling back to a guest session so checkout is never blocked.
  */
 export async function autoAuth(): Promise<AuthResponse | null> {
   const initData = getInitData();
   if (initData) {
-    return initAuth(initData);
+    try {
+      return await initAuth(initData);
+    } catch (err) {
+      console.warn('Telegram initData authentication failed, falling back to guest session:', err);
+    }
   }
 
-  // Outside Telegram (e.g. desktop web browser): rehydrate from token/cookie
+  // Outside Telegram or fallback: rehydrate from token/cookie
   const token = getAuthToken();
   if (token) {
     try {
@@ -78,14 +84,21 @@ export async function autoAuth(): Promise<AuthResponse | null> {
         user: userInfo,
       };
     } catch {
-      // Expired or invalid token
       currentUser = null;
       setAuthToken(null);
-      return null;
     }
   }
 
-  return null;
+  // Fallback to guest session so purchasing is never blocked
+  try {
+    const guestResp = await guestLogin();
+    currentUser = guestResp.user;
+    setAuthToken(guestResp.access_token);
+    return guestResp;
+  } catch (guestErr) {
+    console.error('Guest authentication failed:', guestErr);
+    return null;
+  }
 }
 
 /**

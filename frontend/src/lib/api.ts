@@ -420,6 +420,12 @@ export async function authenticateTelegram(
   });
 }
 
+export async function guestLogin(): Promise<AuthResponse> {
+  return apiClient<AuthResponse>('/auth/guest', {
+    method: 'POST',
+  });
+}
+
 export async function adminLogin(password: string): Promise<AuthResponse> {
   return apiClient<AuthResponse>('/auth/login', {
     method: 'POST',

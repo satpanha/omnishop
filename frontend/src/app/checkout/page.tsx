@@ -15,11 +15,13 @@ import Link from 'next/link';
 import { useCart } from '@/hooks/useCart';
 import {
   createOrder,
+  getAuthToken,
   type CreateOrderPayload,
   type DeliveryLocation,
   type Order,
   type OrderStatus,
 } from '@/lib/api';
+import { autoAuth } from '@/lib/auth';
 import { triggerHaptic } from '@/lib/telegram';
 import Header from '@/components/Header';
 import EmptyState from '@/components/EmptyState';
@@ -78,6 +80,15 @@ export default function CheckoutPage() {
     // Only include delivery if the buyer provided location or address.
     if (delivery && (delivery.address || (delivery.lat !== 0 && delivery.lng !== 0))) {
       payload.delivery = delivery;
+    }
+
+    // Ensure active auth token exists before submitting order
+    if (!getAuthToken()) {
+      try {
+        await autoAuth();
+      } catch (authErr) {
+        console.warn('Pre-checkout autoAuth error:', authErr);
+      }
     }
 
     try {
