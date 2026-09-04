@@ -136,10 +136,11 @@ app.add_middleware(CorrelationIdMiddleware)
 # Rate Limiter middleware
 app.add_middleware(RateLimiterMiddleware)
 
-# CORS configuration — include all common local dev ports
-frontend_url = settings.FRONTEND_URL.strip()
+# CORS configuration — include all common local dev ports and Vercel domains
+frontend_url = settings.FRONTEND_URL.strip().rstrip("/")
 origins = [
     frontend_url,
+    "https://omnishop.vercel.app",
     "http://localhost:3000",
     "http://127.0.0.1:3000",
     "http://localhost:3001",
@@ -151,6 +152,7 @@ origins = [
 app.add_middleware(
     CORSMiddleware,
     allow_origins=origins,
+    allow_origin_regex=r"https://.*\.vercel\.app",
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
