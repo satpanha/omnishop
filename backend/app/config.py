@@ -50,10 +50,13 @@ class Settings(BaseSettings):
         """Strip accidental leading/trailing whitespace from token values."""
         return v.strip() if isinstance(v, str) else v
 
-    # ── JWT Auth ──────────────────────────────────────────────
+    # ── JWT & Admin Auth ──────────────────────────────────────
     JWT_SECRET_KEY: str
     JWT_ALGORITHM: str = "HS256"
     JWT_ACCESS_TOKEN_EXPIRE_MINUTES: int = 1440  # 24 hours
+    ADMIN_PASSWORD: str = "admin123"  # Secret password for direct web admin login
+    RECONCILIATION_INTERVAL_SECONDS: int = 60  # Periodic sweep interval for stale unpaid orders
+    AUTO_RUN_MIGRATIONS_ON_STARTUP: bool = True  # Can be disabled on Render to eliminate startup latency
 
     # ── Instagram Integration ─────────────────────────────────
     INSTAGRAM_VERIFY_TOKEN: str = ""

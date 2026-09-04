@@ -33,45 +33,47 @@ logger = logging.getLogger(__name__)
 async def lifespan(app: FastAPI):
     """Lifecycle event handler for database connections and pre-warming."""
     logger.info("Initializing OmniShop TMA API Server...")
-    
-    # ── Self-healing database migration runner ────────────────────────────────
-    try:
-        import subprocess
-        import sys
-        logger.info("Running database migrations via Alembic...")
-        res = subprocess.run(
-            [sys.executable, "-m", "alembic", "upgrade", "head"],
-            capture_output=True,
-            text=True
-        )
-        if res.returncode != 0:
-            err_msg = res.stderr or res.stdout
-            if "already exists" in err_msg or "DuplicateTable" in err_msg:
-                logger.info("Baseline tables detected in database. Stamping baseline '0001_baseline'...")
-                stamp_res = subprocess.run(
-                    [sys.executable, "-m", "alembic", "stamp", "0001_baseline"],
-                    capture_output=True,
-                    text=True
-                )
-                if stamp_res.returncode == 0:
-                    logger.info("Baseline stamped successfully. Applying pending migrations...")
-                    subprocess.run(
-                        [sys.executable, "-m", "alembic", "upgrade", "head"],
-                        capture_output=True,
-                        text=True,
-                        check=True
-                    )
-                    logger.info("Database migrations completed successfully after stamping.")
-                else:
-                    logger.error("Failed to stamp baseline: %s", stamp_res.stderr)
-            else:
-                logger.error("Database migration failed: %s", err_msg)
-        else:
-            logger.info("Database migrations completed successfully.")
-    except Exception as exc:
-        logger.error("Database migration runner encountered an error: %s", exc)
-
     settings = get_settings()
+    
+    # ── Database migration runner ────────────────────────────────
+    if settings.AUTO_RUN_MIGRATIONS_ON_STARTUP:
+        try:
+            import subprocess
+            import sys
+            logger.info("Running database migrations via Alembic...")
+            res = subprocess.run(
+                [sys.executable, "-m", "alembic", "upgrade", "head"],
+                capture_output=True,
+                text=True
+            )
+            if res.returncode != 0:
+                err_msg = res.stderr or res.stdout
+                if "already exists" in err_msg or "DuplicateTable" in err_msg:
+                    logger.info("Baseline tables detected in database. Stamping baseline '0001_baseline'...")
+                    stamp_res = subprocess.run(
+                        [sys.executable, "-m", "alembic", "stamp", "0001_baseline"],
+                        capture_output=True,
+                        text=True
+                    )
+                    if stamp_res.returncode == 0:
+                        logger.info("Baseline stamped successfully. Applying pending migrations...")
+                        subprocess.run(
+                            [sys.executable, "-m", "alembic", "upgrade", "head"],
+                            capture_output=True,
+                            text=True,
+                            check=True
+                        )
+                        logger.info("Database migrations completed successfully after stamping.")
+                    else:
+                        logger.error("Failed to stamp baseline: %s", stamp_res.stderr)
+                else:
+                    logger.error("Database migration failed: %s", err_msg)
+            else:
+                logger.info("Database migrations completed successfully.")
+        except Exception as exc:
+            logger.error("Database migration runner encountered an error: %s", exc)
+    else:
+        logger.info("Startup migrations disabled (AUTO_RUN_MIGRATIONS_ON_STARTUP=false). Run via release/build command.")
     
     # In development mode, auto-generate tables if needed
     if settings.ENVIRONMENT == "development":
@@ -83,10 +85,37 @@ async def lifespan(app: FastAPI):
             logger.info("Database tables verified.")
         except Exception as exc:
             logger.error("Error creating database tables at startup: %s", exc)
-            
+
+    # ── Background reconciliation worker for stale unpaid orders ──────────────
+    import asyncio
+    from app.database import async_session
+    from app.services.orders import run_reconciliation
+
+    async def _reconciliation_loop():
+        interval = settings.RECONCILIATION_INTERVAL_SECONDS
+        logger.info("Order reconciliation worker started (interval=%ds)...", interval)
+        while True:
+            try:
+                await asyncio.sleep(interval)
+                async with async_session() as session:
+                    await run_reconciliation(session)
+            except asyncio.CancelledError:
+                logger.info("Order reconciliation worker received stop signal.")
+                break
+            except Exception as exc:
+                logger.error("Error in reconciliation worker loop: %s", exc)
+
+    reconciliation_task = asyncio.create_task(_reconciliation_loop())
+
     yield
-    
+
     logger.info("Shutting down OmniShop TMA API Server...")
+    if reconciliation_task:
+        reconciliation_task.cancel()
+        try:
+            await reconciliation_task
+        except asyncio.CancelledError:
+            pass
     await engine.dispose()
     logger.info("Database connections closed.")
 

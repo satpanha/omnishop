@@ -118,6 +118,7 @@ export interface Product {
   price: number;
   stock_quantity: number;
   image_url: string | null;
+  category?: string | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -162,8 +163,10 @@ export interface PaginatedResponse<T> {
 
 export interface ProductQueryParams {
   search?: string;
+  category?: string;
   limit?: number;
   offset?: number;
+  include_inactive?: boolean;
 }
 
 export interface CreateProductPayload {
@@ -172,6 +175,7 @@ export interface CreateProductPayload {
   price: number;
   stock_quantity: number;
   image_url?: string;
+  category?: string;
   is_active?: boolean;
 }
 
@@ -281,8 +285,10 @@ export async function getProducts(
 ): Promise<PaginatedResponse<Product>> {
   const searchParams = new URLSearchParams();
   if (params?.search) searchParams.set('search', params.search);
+  if (params?.category) searchParams.set('category', params.category);
   if (params?.limit) searchParams.set('limit', String(params.limit));
   if (params?.offset) searchParams.set('offset', String(params.offset));
+  if (params?.include_inactive) searchParams.set('include_inactive', 'true');
 
   const query = searchParams.toString();
   const endpoint = `/products${query ? `?${query}` : ''}`;
@@ -315,6 +321,12 @@ export async function updateProduct(
 export async function deleteProduct(id: string): Promise<void> {
   return apiClient<void>(`/products/${id}`, {
     method: 'DELETE',
+  });
+}
+
+export async function restoreProduct(id: string): Promise<Product> {
+  return apiClient<Product>(`/products/${id}/restore`, {
+    method: 'PATCH',
   });
 }
 
@@ -408,6 +420,23 @@ export async function authenticateTelegram(
   });
 }
 
+export async function adminLogin(password: string): Promise<AuthResponse> {
+  return apiClient<AuthResponse>('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({ password }),
+  });
+}
+
+export async function getMe(): Promise<UserInfo> {
+  return apiClient<UserInfo>('/auth/me');
+}
+
+export async function logoutApi(): Promise<void> {
+  return apiClient<void>('/auth/logout', {
+    method: 'POST',
+  });
+}
+
 // ─── Order API ───
 
 export async function createOrder(payload: CreateOrderPayload): Promise<Order> {
@@ -468,5 +497,15 @@ export async function sendOwnerMessage(
   return apiClient<Message>(`/conversations/${conversationId}/messages`, {
     method: 'POST',
     body: JSON.stringify({ text }),
+  });
+}
+
+export async function updateConversationState(
+  conversationId: string,
+  state: ConversationState
+): Promise<Conversation> {
+  return apiClient<Conversation>(`/conversations/${conversationId}/state`, {
+    method: 'PATCH',
+    body: JSON.stringify({ state }),
   });
 }

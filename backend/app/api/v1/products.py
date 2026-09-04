@@ -41,6 +41,7 @@ async def get_or_create_default_seller(db: AsyncSession, settings: Settings) -> 
 @router.get("", response_model=ProductList)
 async def list_products(
     search: Optional[str] = None,
+    category: Optional[str] = None,
     limit: int = 50,
     offset: int = 0,
     include_inactive: bool = False,
@@ -59,6 +60,9 @@ async def list_products(
     
     if not should_include_inactive:
         query = query.where(Product.is_active == True)
+
+    if category and category.strip() and category.strip().lower() != "all":
+        query = query.where(Product.category == category.strip())
 
     if search:
         query = query.where(
@@ -162,6 +166,7 @@ async def create_product(
         price=payload.price,
         stock_quantity=payload.stock_quantity,
         image_url=payload.image_url,
+        category=payload.category,
         is_active=True,
     )
     db.add(product)
@@ -218,3 +223,26 @@ async def delete_product(
     product.is_active = False
     await db.commit()
     return None
+
+
+@router.patch("/{product_id}/restore", response_model=ProductResponse)
+async def restore_product(
+    product_id: uuid.UUID,
+    db: AsyncSession = Depends(get_db),
+    admin_user: dict = Depends(require_admin),
+):
+    """Restore a soft-deleted product by setting is_active=True (Admin only)."""
+    stmt = select(Product).where(Product.id == product_id)
+    result = await db.execute(stmt)
+    product = result.scalar_one_or_none()
+
+    if not product:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Product not found",
+        )
+
+    product.is_active = True
+    await db.commit()
+    await db.refresh(product)
+    return product

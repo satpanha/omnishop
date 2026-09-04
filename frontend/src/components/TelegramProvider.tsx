@@ -29,14 +29,15 @@ export default function TelegramProvider({ children }: { children: React.ReactNo
     setIsInTelegram(isTg);
 
     if (isTg) {
-      // Initialize Telegram App
+      // Signal to Telegram native client immediately so splash screen dismisses
       signalReady();
       expandViewport();
       setHeaderColor('#1a1a2e'); // match dark theme bg
 
-      // Authenticate with Telegram backend
-      authenticate().finally(() => {
-        setIsReady(true);
+      // Allow UI to mount immediately; authenticate in the background
+      setIsReady(true);
+      authenticate().catch((err) => {
+        console.warn('Background Telegram authentication pending/failed:', err);
       });
     } else {
       // Development/Local browser fallback
@@ -47,43 +48,7 @@ export default function TelegramProvider({ children }: { children: React.ReactNo
 
   return (
     <TelegramContext.Provider value={{ isReady, isInTelegram, authError: error }}>
-      {isReady ? (
-        <>
-          {error && (
-            <div style={{
-              background: '#5c1a1a',
-              color: '#ff8a8a',
-              padding: '12px 16px',
-              textAlign: 'center',
-              fontSize: '14px',
-              fontFamily: 'system-ui, sans-serif',
-              borderBottom: '1px solid #7a2a2a',
-            }}>
-              Auth error: {error}
-            </div>
-          )}
-          {children}
-        </>
-      ) : (
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          height: '100vh',
-          background: '#1a1a2e',
-          color: '#eaeaea',
-          fontFamily: 'system-ui, sans-serif'
-        }}>
-          <div className="shimmer" style={{ width: '40px', height: '40px', borderRadius: '50%', marginBottom: '16px' }} />
-          <span>Syncing with Telegram...</span>
-          {error && (
-            <span style={{ color: '#ff8a8a', marginTop: '12px', fontSize: '14px' }}>
-              {error}
-            </span>
-          )}
-        </div>
-      )}
+      {children}
     </TelegramContext.Provider>
   );
 }

@@ -1,0 +1,24 @@
+name: Keep Render Alive
+
+on:
+  schedule:
+    # Runs every 12 minutes (Render free tier spins down after 15 minutes of inactivity)
+    - cron: '*/12 * * * *'
+  workflow_dispatch:
+
+jobs:
+  keep-alive:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Backend Health Endpoint
+        run: |
+          URL="${{ secrets.BACKEND_URL || vars.BACKEND_URL }}"
+          if [ -z "$URL" ]; then
+            echo "BACKEND_URL is not set yet. Please add it to your GitHub Repo Settings -> Secrets/Variables -> Actions."
+            echo "Example: https://your-app-name.onrender.com"
+            exit 0
+          fi
+          CLEAN_URL="${URL%/}"
+          echo "Sending keep-alive ping to $CLEAN_URL/health..."
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" -m 45 "$CLEAN_URL/health" || true)
+          echo "Response HTTP Status: $STATUS"

@@ -17,6 +17,7 @@ from app.schemas.conversation import (
     ConversationDetail,
     ConversationList,
     ConversationResponse,
+    ConversationStateUpdate,
     MessageCreate,
     MessageResponse,
 )
@@ -91,3 +92,25 @@ async def send_message(
             "Message saved but could not be delivered to the buyer.",
         )
     return msg
+
+
+@router.patch("/{conversation_id}/state", response_model=ConversationResponse)
+async def update_conversation_state(
+    conversation_id: uuid.UUID,
+    payload: ConversationStateUpdate,
+    db: AsyncSession = Depends(get_db),
+    admin_user: dict = Depends(require_admin),
+):
+    """Owner updates conversation state (e.g. resolve/close or return to bot)."""
+    conv = (
+        await db.execute(
+            select(Conversation).where(Conversation.id == conversation_id)
+        )
+    ).scalar_one_or_none()
+    if conv is None:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Conversation not found")
+
+    conv.state = payload.state
+    await db.commit()
+    await db.refresh(conv)
+    return conv

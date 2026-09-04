@@ -37,6 +37,7 @@ export default function CheckoutPage() {
   const [delivery, setDelivery] = useState<DeliveryLocation | null>(null);
   const [order, setOrder] = useState<Order | null>(null);
   const [paidStatus, setPaidStatus] = useState<OrderStatus | null>(null);
+  const idempotencyKeyRef = React.useRef<string>(`order-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`);
 
   // Called by PaymentQRPanel when the order transitions away from awaiting_payment.
   const handlePaymentStatusChange = useCallback((status: OrderStatus) => {
@@ -71,7 +72,7 @@ export default function CheckoutPage() {
         product_id: product.id,
         quantity,
       })),
-      idempotency_key: `cart-${Date.now()}`,
+      idempotency_key: idempotencyKeyRef.current,
     };
 
     // Only include delivery if the buyer provided location or address.

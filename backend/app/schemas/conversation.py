@@ -5,7 +5,14 @@ Pydantic v2 schemas for conversation / messaging.
 import uuid
 from datetime import datetime
 
+from typing import Literal
+
 from pydantic import BaseModel, ConfigDict, Field
+
+
+class ConversationStateUpdate(BaseModel):
+    """Schema to update the conversation state (e.g. resolve/close or return to bot)."""
+    state: Literal["bot", "awaiting_owner", "owner_handling", "closed"]
 
 
 class MessageCreate(BaseModel):

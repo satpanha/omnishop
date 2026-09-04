@@ -114,6 +114,52 @@ class PayWayService:
             hashlib.sha512,
         ).hexdigest()
 
+    async def check_transaction(
+        self, *, order_id: str, provider_txn_ref: str
+    ) -> dict:
+        """
+        Query PayWay check-transaction endpoint to verify payment status.
+        Returns a dict with 'status' ('paid', 'initiated', 'failed') and details.
+        """
+        if not self.configured:
+            # Stub mode: offline simulation
+            return {
+                "status": "initiated",
+                "tran_id": provider_txn_ref,
+                "mode": "stub",
+            }
+
+        payload = {
+            "merchant_id": self.merchant_id,
+            "tran_id": provider_txn_ref,
+        }
+        message = f"{self.merchant_id}{provider_txn_ref}"
+        payload["hash"] = hmac.new(
+            self.api_key.encode("utf-8"),
+            message.encode("utf-8"),
+            hashlib.sha512,
+        ).hexdigest()
+
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                resp = await client.post(
+                    f"{self.base_url}/api/payment-gateway/v1/payments/check-transaction-v2",
+                    json=payload,
+                )
+                resp.raise_for_status()
+                data = resp.json()
+
+            status_val = str(data.get("status", data.get("status_code", ""))).lower()
+            is_paid = status_val in {"paid", "success", "approved", "completed", "0", "00"}
+            return {
+                "status": "paid" if is_paid else "initiated",
+                "tran_id": provider_txn_ref,
+                "raw": data,
+            }
+        except Exception as exc:
+            logger.error("ABA PayWay check_transaction failed for %s: %s", provider_txn_ref, exc)
+            return {"status": "error", "detail": str(exc)}
+
     # ── Callback signature verification (source of truth) ─────
     @staticmethod
     def compute_signature(raw_body: bytes, secret: str) -> str:

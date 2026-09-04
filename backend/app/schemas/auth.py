@@ -10,6 +10,11 @@ class TelegramAuthRequest(BaseModel):
     initData: str
 
 
+class AdminLoginRequest(BaseModel):
+    """Payload for direct desktop web admin login."""
+    password: str
+
+
 class UserInfo(BaseModel):
     """Basic user information returned after authentication."""
     telegram_id: int

@@ -16,6 +16,7 @@ class ProductCreate(BaseModel):
     price: Decimal = Field(..., ge=0, decimal_places=2, description="Price with 2 decimal places")
     stock_quantity: int = Field(default=0, ge=0)
     image_url: str | None = Field(default=None, max_length=500)
+    category: str | None = Field(default=None, max_length=50)
 
 
 class ProductUpdate(BaseModel):
@@ -25,6 +26,7 @@ class ProductUpdate(BaseModel):
     price: Decimal | None = Field(default=None, ge=0, decimal_places=2)
     stock_quantity: int | None = Field(default=None, ge=0)
     image_url: str | None = Field(default=None, max_length=500)
+    category: str | None = Field(default=None, max_length=50)
     is_active: bool | None = None
 
 
@@ -39,6 +41,7 @@ class ProductResponse(BaseModel):
     price: Decimal
     stock_quantity: int
     image_url: str | None
+    category: str | None
     is_active: bool
     created_at: datetime
     updated_at: datetime

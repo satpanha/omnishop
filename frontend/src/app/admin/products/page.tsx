@@ -1,7 +1,15 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
-import { getProducts, createProduct, updateProduct, deleteProduct, uploadProductImage, type Product } from '@/lib/api';
+import React, { useCallback, useEffect, useState } from 'react';
+import {
+  getProducts,
+  createProduct,
+  updateProduct,
+  deleteProduct,
+  restoreProduct,
+  uploadProductImage,
+  type Product,
+} from '@/lib/api';
 import { triggerHaptic } from '@/lib/telegram';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 import EmptyState from '@/components/EmptyState';
@@ -14,12 +22,14 @@ export default function AdminProducts() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [includeInactive, setIncludeInactive] = useState(false);
 
   // Form Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState({
     name: '',
+    category: '',
     description: '',
     price: '',
     stock_quantity: '',
@@ -30,9 +40,9 @@ export default function AdminProducts() {
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
-  const fetchProducts = () => {
+  const fetchProducts = useCallback((showInactive = includeInactive) => {
     setLoading(true);
-    getProducts({ limit: 100 })
+    getProducts({ limit: 100, include_inactive: showInactive })
       .then((res) => {
         setProducts(res.items);
         setError(null);
@@ -43,16 +53,17 @@ export default function AdminProducts() {
       .finally(() => {
         setLoading(false);
       });
-  };
+  }, [includeInactive]);
 
   useEffect(() => {
     fetchProducts();
-  }, []);
+  }, [fetchProducts]);
 
   const openAddModal = () => {
     setEditingProduct(null);
     setFormData({
       name: '',
+      category: '',
       description: '',
       price: '',
       stock_quantity: '0',
@@ -67,6 +78,7 @@ export default function AdminProducts() {
     setEditingProduct(product);
     setFormData({
       name: product.name,
+      category: product.category || '',
       description: product.description || '',
       price: String(product.price),
       stock_quantity: String(product.stock_quantity),
@@ -128,6 +140,7 @@ export default function AdminProducts() {
 
     const payload = {
       name: formData.name,
+      category: formData.category.trim() || undefined,
       description: formData.description || "",
       price: parseFloat(formData.price),
       stock_quantity: parseInt(formData.stock_quantity, 10),
@@ -181,13 +194,40 @@ export default function AdminProducts() {
     }
   };
 
+  const handleRestoreProduct = async (id: string) => {
+    triggerHaptic('medium');
+    try {
+      await restoreProduct(id);
+      triggerHaptic('notification', 'success');
+      fetchProducts();
+    } catch (err: any) {
+      triggerHaptic('notification', 'error');
+      alert(err.message || 'Restore operation failed.');
+    }
+  };
+
   return (
     <div className="fade-in">
       <div className={styles.headerRow}>
         <h1 className={styles.heading}>Store Inventory</h1>
-        <button className="btn-primary" onClick={openAddModal}>
-          + Add Product
-        </button>
+        <div className={styles.headerActions}>
+          <label className={styles.toggleLabel}>
+            <input
+              type="checkbox"
+              className={styles.toggleInput}
+              checked={includeInactive}
+              onChange={(e) => {
+                const checked = e.target.checked;
+                setIncludeInactive(checked);
+                fetchProducts(checked);
+              }}
+            />
+            Show Inactive
+          </label>
+          <button className="btn-primary" onClick={openAddModal}>
+            + Add Product
+          </button>
+        </div>
       </div>
 
       {loading ? (
@@ -220,6 +260,7 @@ export default function AdminProducts() {
                 <div className={styles.productMeta}>
                   <span className={styles.productPrice}>${Number(p.price).toFixed(2)}</span>
                   <span className={styles.productStock}>Stock: {p.stock_quantity}</span>
+                  {p.category && <span className={styles.productStock}>🏷️ {p.category}</span>}
                 </div>
               </div>
 
@@ -228,17 +269,29 @@ export default function AdminProducts() {
                   onClick={() => openEditModal(p)}
                   className={styles.actionButton}
                   aria-label="Edit"
+                  title="Edit"
                 >
                   ✏️
                 </button>
-                <button
-                  onClick={() => handleDeleteProduct(p.id)}
-                  disabled={!p.is_active}
-                  className={styles.actionButton}
-                  aria-label="Delete"
-                >
-                  🗑️
-                </button>
+                {p.is_active ? (
+                  <button
+                    onClick={() => handleDeleteProduct(p.id)}
+                    className={styles.actionButton}
+                    aria-label="Delete"
+                    title="Delete product"
+                  >
+                    🗑️
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => handleRestoreProduct(p.id)}
+                    className={styles.actionButton}
+                    aria-label="Restore"
+                    title="Restore product"
+                  >
+                    ↺
+                  </button>
+                )}
               </div>
             </div>
           ))}
@@ -273,6 +326,18 @@ export default function AdminProducts() {
                   onChange={handleInputChange}
                   required
                   placeholder="e.g. Wireless Headphones"
+                />
+              </div>
+
+              <div className={styles.formGroup}>
+                <label htmlFor="category">Category</label>
+                <input
+                  type="text"
+                  id="category"
+                  name="category"
+                  value={formData.category}
+                  onChange={handleInputChange}
+                  placeholder="e.g. Electronics, Clothing, Food"
                 />
               </div>
 

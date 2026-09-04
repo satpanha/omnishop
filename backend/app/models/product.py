@@ -63,6 +63,11 @@ class Product(Base):
         String(500),
         nullable=True,
     )
+    category: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
+        index=True,
+    )
     is_active: Mapped[bool] = mapped_column(
         Boolean,
         default=True,

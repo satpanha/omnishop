@@ -89,9 +89,14 @@ async def create_order(
     total = Decimal("0.00")
     line_items: list[Transaction] = []
     for item in items:
-        product = (
-            await db.execute(select(Product).where(Product.id == item.product_id))
-        ).scalar_one_or_none()
+        # Acquire row lock in Postgres to prevent race-condition overselling.
+        # Fall back to standard query if running against in-memory SQLite (e.g. tests).
+        stmt = select(Product).where(Product.id == item.product_id)
+        try:
+            product = (await db.execute(stmt.with_for_update())).scalar_one_or_none()
+        except Exception:
+            product = (await db.execute(stmt)).scalar_one_or_none()
+
         if product is None:
             raise OrderError(404, f"Product not found: {item.product_id}")
         if not product.is_active:
@@ -195,6 +200,10 @@ async def apply_payment_success(
     if order.status == "awaiting_payment":
         order.status = "paid"
 
+    # Synchronize line item status
+    for line in order.line_items:
+        line.status = "paid"
+
     await db.commit()
     await db.refresh(order)
     logger.info("Payment settled for order %s (payment %s)", order.id, payment.id)
@@ -232,6 +241,20 @@ async def transition_order(
         order.eta_minutes = eta_minutes
 
     order.status = new_status
+
+    # Synchronize line item status with order aggregate
+    tx_status = (
+        "paid" if new_status in ("paid", "preparing", "dispatched", "delivered")
+        else ("cancelled" if new_status in ("cancelled", "payment_expired") else "pending")
+    )
+    for line in order.line_items:
+        line.status = tx_status
+
+    # If transitioning to paid manually, also settle Payment record if present
+    if new_status == "paid" and order.payment is not None and order.payment.status != "paid":
+        order.payment.status = "paid"
+        order.payment.paid_at = datetime.now(timezone.utc)
+
     await db.commit()
     await db.refresh(order)
     logger.info("Order %s → %s", order.id, new_status)

@@ -4,8 +4,7 @@
 
 import { useState, useEffect, useCallback } from 'react';
 import type { UserInfo } from '@/lib/api';
-import { autoAuth, getUser, logout as logoutAuth, isAdmin as checkAdmin } from '@/lib/auth';
-import { isTelegramEnvironment } from '@/lib/telegram';
+import { autoAuth, getUser, logout as logoutAuth, isAdmin as checkAdmin, loginWithAdminPassword } from '@/lib/auth';
 
 interface UseAuthReturn {
   user: UserInfo | null;
@@ -13,6 +12,7 @@ interface UseAuthReturn {
   isAdmin: boolean;
   error: string | null;
   authenticate: () => Promise<void>;
+  loginWithPassword: (password: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -46,20 +46,31 @@ export function useAuth(): UseAuthReturn {
     }
   }, []);
 
+  const loginWithPassword = useCallback(async (password: string) => {
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await loginWithAdminPassword(password);
+      setUser(response.user);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Invalid password';
+      setError(message);
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const logout = useCallback(() => {
     logoutAuth();
     setUser(null);
     setError(null);
   }, []);
 
-  // Auto-authenticate on mount if in Telegram
+  // Auto-authenticate on mount across all platforms
   useEffect(() => {
-    if (isTelegramEnvironment()) {
-      authenticate();
-    } else {
-      // Not in Telegram, skip auth
-      setLoading(false);
-    }
+    authenticate();
   }, [authenticate]);
 
   const isAdmin = user?.is_admin === true || checkAdmin();
@@ -70,6 +81,7 @@ export function useAuth(): UseAuthReturn {
     isAdmin,
     error,
     authenticate,
+    loginWithPassword,
     logout,
   };
 }

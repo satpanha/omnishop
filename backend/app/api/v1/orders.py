@@ -151,15 +151,40 @@ async def update_order_status(
 async def refresh_payment(
     order_id: uuid.UUID,
     response: Response,
+    background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
     current_user: dict = Depends(get_current_user),
 ):
     """
-    Buyer/owner manual fallback when an ABA callback was missed. In stub mode this
-    just returns the current state; in live mode this is where a PayWay status
-    re-query would run. Webhook remains the source of truth.
+    Buyer/owner manual fallback when an ABA callback was missed.
+    Queries PayWay's status API directly and advances the order if paid.
     """
     order = await _load_order_or_404(db, order_id)
     _assert_order_access(order, current_user)
     response.headers["Cache-Control"] = "no-store"
+
+    if order.status == "awaiting_payment" and order.payment is not None:
+        from app.services.payway import PayWayService
+        payway = PayWayService()
+        check_res = await payway.check_transaction(
+            order_id=str(order.id),
+            provider_txn_ref=order.payment.provider_txn_ref or str(order.id),
+        )
+        if check_res.get("status") == "paid":
+            order = await orders.apply_payment_success(
+                db, order.payment, raw_callback=check_res.get("raw")
+            )
+            background_tasks.add_task(notifications.send_buyer_invoice, order.id)
+            background_tasks.add_task(notifications.notify_owner_order_paid, order.id)
+
     return order
+
+
+@router.post("/reconcile")
+async def reconcile_orders(
+    db: AsyncSession = Depends(get_db),
+    admin_user: dict = Depends(require_admin),
+):
+    """Manually trigger order reconciliation to expire stale unpaid orders (Admin only)."""
+    result = await orders.run_reconciliation(db)
+    return result

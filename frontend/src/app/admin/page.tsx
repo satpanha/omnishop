@@ -2,14 +2,15 @@
 
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { getProducts, getTransactions, type Product, type Transaction } from '@/lib/api';
+import { getProducts, listOrders, type Order } from '@/lib/api';
 import StatusBadge from '@/components/StatusBadge';
 import LoadingSkeleton from '@/components/LoadingSkeleton';
 import styles from './page.module.css';
 
 export default function AdminDashboard() {
   const [productsCount, setProductsCount] = useState(0);
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [orders, setOrders] = useState<Order[]>([]);
+  const [totalOrdersCount, setTotalOrdersCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -17,11 +18,12 @@ export default function AdminDashboard() {
     setLoading(true);
     Promise.all([
       getProducts({ limit: 1 }), // just to get total count
-      getTransactions({ limit: 10 }) // get recent transactions
+      listOrders({ limit: 50 }) // get recent orders
     ])
-      .then(([productsRes, transactionsRes]) => {
+      .then(([productsRes, ordersRes]) => {
         setProductsCount(productsRes.total);
-        setTransactions(transactionsRes.items);
+        setOrders(ordersRes.items);
+        setTotalOrdersCount(ordersRes.total);
         setError(null);
       })
       .catch((err) => {
@@ -45,11 +47,11 @@ export default function AdminDashboard() {
   }
 
   // Calculate quick metrics
-  const totalOrders = transactions.length;
-  const pendingOrders = transactions.filter((t) => t.status === 'pending').length;
-  const revenue = transactions
-    .filter((t) => t.status === 'paid')
-    .reduce((sum, t) => sum + Number(t.total_price), 0);
+  const totalOrders = totalOrdersCount;
+  const pendingOrders = orders.filter((o) => o.status === 'awaiting_payment').length;
+  const revenue = orders
+    .filter((o) => ['paid', 'preparing', 'dispatched', 'delivered'].includes(o.status))
+    .reduce((sum, o) => sum + Number(o.total_amount), 0);
 
   return (
     <div className="fade-in">
@@ -64,7 +66,7 @@ export default function AdminDashboard() {
         </div>
 
         <div className={`${styles.statCard} glass-card`}>
-          <span className={styles.statIcon}>🕒</span>
+          <span className={styles.statIcon}>⏳</span>
           <span className={styles.statVal}>{pendingOrders}</span>
           <span className={styles.statLabel}>Pending Orders</span>
         </div>
@@ -91,31 +93,36 @@ export default function AdminDashboard() {
           </Link>
         </div>
 
-        {transactions.length === 0 ? (
+        {orders.length === 0 ? (
           <div className={styles.emptyCard}>
             <p>No orders recorded yet.</p>
           </div>
         ) : (
           <div className={styles.ordersList}>
-            {transactions.slice(0, 5).map((tx) => (
-              <div key={tx.id} className={`${styles.orderItem} glass-card`}>
-                <div className={styles.orderMeta}>
-                  <span className={styles.orderId}>ID: #{tx.id.substring(0, 8)}</span>
-                  <span className={styles.orderTime}>
-                    {new Date(tx.created_at).toLocaleDateString()}
-                  </span>
-                </div>
+            {orders.slice(0, 5).map((order) => {
+              const itemCount = order.line_items?.reduce((sum, item) => sum + item.quantity, 0) ?? 0;
+              return (
+                <div key={order.id} className={`${styles.orderItem} glass-card`}>
+                  <div className={styles.orderMeta}>
+                    <span className={styles.orderId}>ID: #{order.id.substring(0, 8)}</span>
+                    <span className={styles.orderTime}>
+                      {new Date(order.created_at).toLocaleDateString()}
+                    </span>
+                  </div>
 
-                <div className={styles.orderDetail}>
-                  <span>{tx.quantity} items</span>
-                  <span className={styles.orderPrice}>${Number(tx.total_price).toFixed(2)}</span>
-                </div>
+                  <div className={styles.orderDetail}>
+                    <span>{itemCount} {itemCount === 1 ? 'item' : 'items'}</span>
+                    <span className={styles.orderPrice}>
+                      {order.currency === 'KHR' ? '៛' : '$'}{Number(order.total_amount).toFixed(2)}
+                    </span>
+                  </div>
 
-                <div className={styles.orderStatus}>
-                  <StatusBadge status={tx.status} />
+                  <div className={styles.orderStatus}>
+                    <StatusBadge status={order.status} />
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </section>

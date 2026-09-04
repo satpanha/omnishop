@@ -284,3 +284,25 @@
   font-size: 0.78rem;
   color: #ef4444;
 }
+
+.headerActions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.toggleLabel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  color: var(--app-text-secondary);
+  cursor: pointer;
+  user-select: none;
+}
+
+.toggleInput {
+  cursor: pointer;
+  accent-color: var(--app-primary, #6366f1);
+}
+

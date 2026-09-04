@@ -286,19 +286,21 @@ async def payway_webhook(
     can never advance payment state (401, no DB change).
     """
     raw_body = await request.body()
-    if not PayWayService.verify_callback(
-        raw_body, x_payway_signature, settings.ABA_PAYWAY_CALLBACK_SECRET
-    ):
-        logger.warning(
-            "[SECURITY] payway.invalid_signature from=%s",
-            request.client.host if request.client else "unknown",
-        )
-        raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid callback signature")
-
     try:
         data = json.loads(raw_body.decode("utf-8"))
     except Exception as exc:
         raise HTTPException(status.HTTP_400_BAD_REQUEST, "Malformed JSON body") from exc
+
+    sig = x_payway_signature or (data.get("hash") if isinstance(data, dict) else None)
+    if settings.ABA_PAYWAY_CALLBACK_SECRET:
+        if not PayWayService.verify_callback(
+            raw_body, sig, settings.ABA_PAYWAY_CALLBACK_SECRET
+        ):
+            logger.warning(
+                "[SECURITY] payway.invalid_signature from=%s",
+                request.client.host if request.client else "unknown",
+            )
+            raise HTTPException(status.HTTP_401_UNAUTHORIZED, "Invalid callback signature")
 
     txn_ref = data.get("tran_id") or data.get("provider_txn_ref")
     if not txn_ref:

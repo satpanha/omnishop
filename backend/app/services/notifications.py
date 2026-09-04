@@ -13,6 +13,7 @@ what they need, never a detached ORM instance.
 """
 
 import functools
+import html
 import logging
 
 from sqlalchemy import select
@@ -65,12 +66,19 @@ async def _load_lines(session: AsyncSession, order_id) -> list[tuple[str, int, f
 
 
 def _summary_text(order: Order, lines: list[tuple[str, int, float]]) -> str:
-    items = "\n".join(f"• {name} ×{qty} — ${total:.2f}" for name, qty, total in lines)
+    items = "\n".join(f"• {html.escape(name)} ×{qty} — ${total:.2f}" for name, qty, total in lines)
     eta = f"\n<b>ETA:</b> ~{order.eta_minutes} min" if order.eta_minutes else ""
-    addr = f"\n<b>Deliver to:</b> {order.delivery_address}" if order.delivery_address else ""
+    addr = f"\n<b>Deliver to:</b> {html.escape(order.delivery_address)}" if order.delivery_address else ""
+    map_link = ""
+    if order.delivery_lat is not None and order.delivery_lng is not None:
+        map_link = (
+            f'\n📍 <b>Location:</b> '
+            f'<a href="https://www.google.com/maps?q={order.delivery_lat},{order.delivery_lng}">'
+            f'Open in Google Maps</a>'
+        )
     return (
         f"{items}\n\n"
-        f"<b>Total:</b> ${float(order.total_amount):.2f}{eta}{addr}\n"
+        f"<b>Total:</b> ${float(order.total_amount):.2f}{eta}{addr}{map_link}\n"
         f"<b>Order:</b> <code>{order.id}</code>"
     )
 
@@ -117,7 +125,7 @@ async def notify_owner_new_order(order_id) -> None:
         for name, qty in low_stock:
             await tg.send_message(
                 chat_id=admin_id,
-                text=f"<b>⚠️ Low stock:</b> {name} ({qty} left)",
+                text=f"<b>⚠️ Low stock:</b> {html.escape(name)} ({qty} left)",
             )
     except Exception as exc:  # noqa: BLE001 - notifications are best-effort
         logger.error("notify_owner_new_order failed: %s", exc)
@@ -163,11 +171,12 @@ async def notify_owner_escalation(buyer_platform: str, buyer_id: str, text: str)
     admin_id = settings.ADMIN_TELEGRAM_ID
     if not admin_id:
         return
+    escaped_text = html.escape(text)
     msg = (
         "<b>💬 Buyer needs a reply</b>\n\n"
         f"<b>Platform:</b> {buyer_platform}\n"
         f"<b>Buyer:</b> <code>{buyer_id}</code>\n\n"
-        f"“{text}”\n\n"
+        f"“{escaped_text}”\n\n"
         "<i>Reply from the admin panel, or reply to this message to answer.</i>"
     )
     tg = TelegramService()

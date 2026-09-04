@@ -19,7 +19,7 @@ class OrderLineItemCreate(BaseModel):
     """One product line in a checkout."""
 
     product_id: uuid.UUID
-    quantity: int = Field(..., ge=1, description="Must order at least 1 item")
+    quantity: int = Field(..., ge=1, le=100, description="Must order between 1 and 100 items")
 
 
 class DeliveryInfo(BaseModel):

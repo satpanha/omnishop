@@ -17,7 +17,7 @@ export default function StorefrontHome() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [isCartOpen, setIsCartOpen] = useState(false);
   
-  const { products, loading, error } = useProducts(search);
+  const { products, loading, error } = useProducts(search, selectedCategory);
   const { addItem } = useCart();
 
   const handleSearchChange = (e: React.ChangeEvent<HTMLInputElement>) => {

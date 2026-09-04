@@ -2,6 +2,9 @@
 
 import {
   authenticateTelegram,
+  adminLogin as apiAdminLogin,
+  getMe,
+  logoutApi,
   setAuthToken,
   getAuthToken,
   type UserInfo,
@@ -45,21 +48,44 @@ export async function initAuth(initData: string): Promise<AuthResponse | null> {
 }
 
 /**
- * Try to authenticate automatically from Telegram context.
+ * Log in directly using the admin password (desktop browser).
+ */
+export async function loginWithAdminPassword(password: string): Promise<AuthResponse> {
+  const response = await apiAdminLogin(password);
+  currentUser = response.user;
+  setAuthToken(response.access_token);
+  return response;
+}
+
+/**
+ * Try to authenticate automatically from Telegram context or stored session.
  */
 export async function autoAuth(): Promise<AuthResponse | null> {
   const initData = getInitData();
-  if (!initData) {
-    // Try loading from stored token
-    const token = getAuthToken();
-    if (token) {
-      // We have a stored token but no user info
-      // In a real app, we'd validate the token with the server
+  if (initData) {
+    return initAuth(initData);
+  }
+
+  // Outside Telegram (e.g. desktop web browser): rehydrate from token/cookie
+  const token = getAuthToken();
+  if (token) {
+    try {
+      const userInfo = await getMe();
+      currentUser = userInfo;
+      return {
+        access_token: token,
+        token_type: 'bearer',
+        user: userInfo,
+      };
+    } catch {
+      // Expired or invalid token
+      currentUser = null;
+      setAuthToken(null);
       return null;
     }
-    return null;
   }
-  return initAuth(initData);
+
+  return null;
 }
 
 /**
@@ -86,10 +112,15 @@ export function isAdmin(): boolean {
 /**
  * Clear auth state and log out.
  */
-export function logout(): void {
+export async function logout(): Promise<void> {
   currentUser = null;
   setAuthToken(null);
   authPromise = null;
+  try {
+    await logoutApi();
+  } catch {
+    // Silently ignore network failures on logout
+  }
 }
 
 /**

@@ -70,6 +70,26 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
             self.buckets[ip] = (new_tokens, now)
             return False
 
+    @staticmethod
+    def _get_client_ip(request: Request) -> str:
+        # 1. Cloudflare header
+        cf_ip = request.headers.get("CF-Connecting-IP")
+        if cf_ip:
+            return cf_ip.strip()
+
+        # 2. X-Forwarded-For (leftmost IP is the originating client)
+        xff = request.headers.get("X-Forwarded-For")
+        if xff:
+            client_ip = xff.split(",")[0].strip()
+            if client_ip:
+                return client_ip
+
+        # 3. Direct socket connection
+        if request.client and request.client.host:
+            return request.client.host
+
+        return "unknown_ip"
+
     async def dispatch(self, request: Request, call_next: RequestResponseEndpoint) -> Response:
         # Bypass preflight OPTIONS requests
         if request.method == "OPTIONS":
@@ -87,7 +107,7 @@ class RateLimiterMiddleware(BaseHTTPMiddleware):
             return await call_next(request)
 
         # Retrieve client IP
-        client_ip = request.client.host if request.client else "unknown_ip"
+        client_ip = self._get_client_ip(request)
         
         # Bypass rate limiter in tests
         if request.url.hostname == "test":

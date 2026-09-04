@@ -247,3 +247,62 @@ async def test_payway_callback_unknown_reference_ignored(client):
     )
     assert resp.status_code == 200
     assert resp.json()["status"] == "ignored"
+
+
+@pytest.mark.asyncio
+async def test_orders_reconcile_endpoint(client, mock_admin_token):
+    """Test manual triggering of order expiration reconciliation loop."""
+    headers = {"Authorization": f"Bearer {mock_admin_token}"}
+    resp = await client.post("/api/v1/orders/reconcile", headers=headers)
+    assert resp.status_code == 200
+    data = resp.json()
+    assert data["status"] == "ok"
+    assert "expired" in data
+
+
+@pytest.mark.asyncio
+async def test_refresh_payment_endpoint(client, mock_admin_token, mock_buyer_token):
+    """Test POST /api/v1/orders/{id}/payment/refresh endpoint."""
+    product = await _create_product(client, mock_admin_token)
+    order = (await _create_order(client, mock_buyer_token, product["id"])).json()
+    
+    resp = await client.post(
+        f"/api/v1/orders/{order['id']}/payment/refresh",
+        headers={"Authorization": f"Bearer {mock_buyer_token}"},
+    )
+    assert resp.status_code == 200
+    assert resp.json()["id"] == order["id"]
+
+
+@pytest.mark.asyncio
+async def test_payway_callback_body_hash_signature(client, mock_admin_token, mock_buyer_token):
+    """Test ABA PayWay webhook supports hash in request body instead of header."""
+    product = await _create_product(client, mock_admin_token)
+    order = (await _create_order(client, mock_buyer_token, product["id"])).json()
+
+    # Build body with hash included inside payload
+    tran_id = f"STUB-{order['id']}"
+    raw_content_for_hash = json.dumps({"tran_id": tran_id, "status": "success"}, sort_keys=True).encode()
+    sig = PayWayService.compute_signature(raw_content_for_hash, get_settings().ABA_PAYWAY_CALLBACK_SECRET)
+    
+    body = json.dumps({
+        "tran_id": tran_id,
+        "status": "success",
+        "hash": sig,
+    }).encode()
+
+    resp = await client.post(
+        "/api/v1/webhooks/payway",
+        content=body,
+        headers={"Content-Type": "application/json"},
+    )
+    assert resp.status_code == 200
+
+    got = (
+        await client.get(
+            f"/api/v1/orders/{order['id']}",
+            headers={"Authorization": f"Bearer {mock_admin_token}"},
+        )
+    ).json()
+    assert got["status"] == "paid"
+

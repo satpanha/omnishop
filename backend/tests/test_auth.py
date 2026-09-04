@@ -72,3 +72,64 @@ async def test_telegram_auth_invalid_data_returns_401(client: AsyncClient):
     payload = {"initData": "user=%7B%22id%22%3A123%7D&hash=invalidhash"}
     response = await client.post("/api/v1/auth/telegram", json=payload)
     assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_admin_login_success(client: AsyncClient):
+    """Test admin password login with valid credentials."""
+    from app.config import get_settings
+    settings = get_settings()
+
+    response = await client.post("/api/v1/auth/login", json={"password": settings.ADMIN_PASSWORD})
+    assert response.status_code == 200
+    data = response.json()
+    assert "access_token" in data
+    assert data["token_type"] == "bearer"
+    assert data["user"]["is_admin"] is True
+    # Verify cookie is set
+    assert "access_token" in response.cookies
+
+
+@pytest.mark.asyncio
+async def test_admin_login_invalid_password(client: AsyncClient):
+    """Test admin password login fails with wrong password."""
+    response = await client.post("/api/v1/auth/login", json={"password": "incorrect-password-xyz"})
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_auth_me_authenticated(client: AsyncClient, mock_admin_token: str):
+    """Test /api/v1/auth/me returns user info when authenticated via header."""
+    response = await client.get(
+        "/api/v1/auth/me",
+        headers={"Authorization": f"Bearer {mock_admin_token}"}
+    )
+    assert response.status_code == 200
+    data = response.json()
+    assert data["is_admin"] is True
+
+
+@pytest.mark.asyncio
+async def test_auth_me_cookie(client: AsyncClient, mock_admin_token: str):
+    """Test /api/v1/auth/me works with access_token cookie."""
+    client.cookies.set("access_token", mock_admin_token)
+    response = await client.get("/api/v1/auth/me")
+    assert response.status_code == 200
+    assert response.json()["is_admin"] is True
+
+
+@pytest.mark.asyncio
+async def test_auth_me_unauthenticated(client: AsyncClient):
+    """Test /api/v1/auth/me returns 401 without auth credentials."""
+    client.cookies.clear()
+    response = await client.get("/api/v1/auth/me")
+    assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+async def test_auth_logout(client: AsyncClient):
+    """Test /api/v1/auth/logout succeeds and clears cookie."""
+    response = await client.post("/api/v1/auth/logout")
+    assert response.status_code == 200
+    assert response.json()["message"] == "Logged out"
+
