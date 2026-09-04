@@ -1,6 +1,6 @@
 // ─── OmniShop TMA — Typed API Client ───
 
-const API_URL: string = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+const API_URL: string = process.env.NEXT_PUBLIC_API_URL || 'https://omnishop-5tuo.onrender.com';
 const API_BASE = `${API_URL}/api/v1`;
 
 // ─── Interfaces ───
