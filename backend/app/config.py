@@ -30,6 +30,13 @@ class Settings(BaseSettings):
             v = v.replace("sslmode=prefer", "ssl=prefer")
             v = v.replace("sslmode=disable", "ssl=disable")
             v = v.replace("sslmode=allow", "ssl=allow")
+
+        # Strip channel_binding which Neon includes but asyncpg rejects
+        import re
+        v = re.sub(r"[?&]channel_binding=[^&]*", "", v)
+        if "?" not in v and "&" in v:
+            v = v.replace("&", "?", 1)
+
         return v
 
     # ── Telegram Bot ──────────────────────────────────────────
