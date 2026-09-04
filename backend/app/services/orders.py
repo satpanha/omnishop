@@ -148,26 +148,25 @@ async def create_order(
     db.add(order)
     await db.flush()
 
-    # Payment intent (only when the feature is enabled; else legacy/manual).
-    if settings.PAYMENTS_ENABLED:
-        payway = PayWayService()
-        result = await payway.create_purchase(
-            order_id=str(order.id),
-            amount=f"{total:.2f}",
+    # Payment intent: generate KHQR string and ABA Pay link (live or stub)
+    payway = PayWayService()
+    result = await payway.create_purchase(
+        order_id=str(order.id),
+        amount=f"{total:.2f}",
+        currency=order.currency,
+    )
+    db.add(
+        Payment(
+            order_id=order.id,
+            provider=result.provider,
+            amount=total,
             currency=order.currency,
+            khqr_string=result.khqr_string,
+            aba_link=result.aba_link,
+            provider_txn_ref=result.provider_txn_ref,
+            status="initiated" if result.status == "initiated" else "failed",
         )
-        db.add(
-            Payment(
-                order_id=order.id,
-                provider=result.provider,
-                amount=total,
-                currency=order.currency,
-                khqr_string=result.khqr_string,
-                aba_link=result.aba_link,
-                provider_txn_ref=result.provider_txn_ref,
-                status="initiated" if result.status == "initiated" else "failed",
-            )
-        )
+    )
 
     await db.commit()
     await db.refresh(order)

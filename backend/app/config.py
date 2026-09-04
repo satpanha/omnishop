@@ -81,10 +81,8 @@ class Settings(BaseSettings):
     MAX_UPLOAD_SIZE_MB: int = 5
 
     # ── OmniBot: Payments (ABA PayWay) ────────────────────────
-    # Master feature flag. When False, checkout uses the legacy "manual payment
-    # verification" flow and no payment/order automation runs — so the feature
-    # can be shipped dark and enabled without a redeploy.
-    PAYMENTS_ENABLED: bool = False
+    # Master feature flag. Default True to generate KHQR and ABA Pay intent.
+    PAYMENTS_ENABLED: bool = True
     # ABA PayWay credentials. When any are blank the PayWay service runs in a
     # deterministic STUB mode (safe for dev/tests); production must set all three.
     ABA_PAYWAY_BASE_URL: str = "https://checkout.payway.com.kh"

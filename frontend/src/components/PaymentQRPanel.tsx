@@ -72,8 +72,20 @@ export default function PaymentQRPanel({ order, onStatusChange }: Props) {
 
   if (!payment) {
     return (
-      <div className={styles.noPayment}>
-        <p>No payment record found. Please contact support.</p>
+      <div className={styles.panel}>
+        <div className={styles.waitingRow}>
+          <span className={styles.pulseDot} aria-hidden="true" />
+          <span className={styles.waitingText}>Order #{order.id.slice(0, 8)} Placed</span>
+        </div>
+        <div className={styles.amountRow}>
+          <span className={styles.amountLabel}>Total amount</span>
+          <span className={styles.amountValue}>
+            {order.currency || 'USD'} {Number(order.total_amount).toFixed(2)}
+          </span>
+        </div>
+        <p className={styles.scanHint}>
+          Awaiting seller payment confirmation. Reference: #{order.id.slice(0, 8)}
+        </p>
       </div>
     );
   }

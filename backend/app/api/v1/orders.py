@@ -162,7 +162,7 @@ async def refresh_payment(
     response: Response,
     background_tasks: BackgroundTasks,
     db: AsyncSession = Depends(get_db),
-    current_user: dict = Depends(get_current_user),
+    current_user: Optional[dict] = Depends(get_current_user_optional),
 ):
     """
     Buyer/owner manual fallback when an ABA callback was missed.
