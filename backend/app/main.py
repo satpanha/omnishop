@@ -169,6 +169,7 @@ if not storage.is_remote():
 
 
 @app.get("/health", tags=["System"])
+@app.get("/heath", tags=["System"], include_in_schema=False)
 async def health_check():
     """Simple status check for container deployment probes."""
     return {
